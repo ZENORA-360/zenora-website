@@ -6,12 +6,7 @@ import { Footer } from "@/components/layout/Footer";
 import { SEO } from "@/components/SEO";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-import ketcShot from "@/assets/projects/ketc.png.asset.json";
-import esopaShot from "@/assets/projects/esopa.png.asset.json";
-import erpShot from "@/assets/projects/erp-architecture.png.asset.json";
-import kazaShot from "@/assets/projects/kaza.webp.asset.json";
-import portfolioShot from "@/assets/projects/portfolio.png.asset.json";
-import nexusLogo from "@/assets/partners/nexus.png.asset.json";
+import { projectImages, partnerImages } from "@/lib/site";
 
 type Bilingual = { fr: string; en: string };
 
@@ -46,7 +41,7 @@ export const projects: Project[] = [
     },
     stack: ["React", "Tailwind", "SEO"],
     url: "https://ketc-services.com/",
-    screenshot: ketcShot.url,
+    screenshot: projectImages.ketc,
     year: "2025",
     featured: true,
     role: { fr: "Design, dev, SEO", en: "Design, dev, SEO" },
@@ -65,7 +60,7 @@ export const projects: Project[] = [
     },
     stack: ["Next.js", "CMS", "i18n"],
     url: "https://esopa.org/",
-    screenshot: esopaShot.url,
+    screenshot: projectImages.esopa,
     year: "2025",
     featured: true,
     role: { fr: "Design, dev, éditorial", en: "Design, dev, editorial" },
@@ -84,7 +79,7 @@ export const projects: Project[] = [
     },
     stack: ["React", "Node.js", "PostgreSQL"],
     url: "https://erp-dev.zenora360.com/",
-    screenshot: erpShot.url,
+    screenshot: projectImages.erp,
     year: "2025",
     featured: true,
     role: { fr: "Produit, architecture, dev", en: "Product, architecture, dev" },
@@ -103,7 +98,7 @@ export const projects: Project[] = [
     },
     stack: ["React", "Node.js", "Real-time"],
     url: "https://barthez-kenwou.dev/projects/1",
-    screenshot: nexusLogo.url,
+    screenshot: partnerImages.nexus,
     screenshotMode: "logo",
     year: "2024",
     role: { fr: "Produit, dev full-stack", en: "Product, full-stack dev" },
@@ -122,7 +117,7 @@ export const projects: Project[] = [
     },
     stack: ["React Native", "Node.js"],
     url: "https://barthez-kenwou.dev/projects/3",
-    screenshot: kazaShot.url,
+    screenshot: projectImages.kaza,
     year: "2024",
     role: { fr: "Design mobile, dev React Native", en: "Mobile design, React Native dev" },
     duration: { fr: "12 semaines", en: "12 weeks" },
@@ -140,7 +135,7 @@ export const projects: Project[] = [
     },
     stack: ["Next.js", "MDX"],
     url: "https://barthez-kenwou.dev/",
-    screenshot: portfolioShot.url,
+    screenshot: projectImages.portfolio,
     year: "2024",
     role: { fr: "Design, dev, éditorial", en: "Design, dev, editorial" },
     duration: { fr: "4 semaines", en: "4 weeks" },

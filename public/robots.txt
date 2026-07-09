@@ -1,6 +1,27 @@
+# ZENORA — https://zenora360.com
 User-agent: *
 Allow: /
 Disallow: /admin
 Disallow: /admin/*
 
-Sitemap: https://zenora36.lovable.app/sitemap.xml
+# AI crawlers — public marketing content is allowed
+User-agent: GPTBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+Sitemap: https://zenora360.com/sitemap.xml
+LLMs-Txt: https://zenora360.com/llms.txt

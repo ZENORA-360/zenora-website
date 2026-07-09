@@ -5,18 +5,14 @@ import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { projects } from "@/pages/Projects";
 
-import nexusLogo from "@/assets/partners/nexus.png.asset.json";
-import cafcaLogo from "@/assets/partners/cafca.png.asset.json";
-import eygLogo from "@/assets/partners/eyg.png.asset.json";
-import worketyamoLogo from "@/assets/partners/worketyamo.png.asset.json";
-import kcServicesLogo from "@/assets/partners/kc-services.png.asset.json";
+import { partnerImages } from "@/lib/site";
 
 const partners = [
-  { name: "K&C Services", logo: kcServicesLogo.url },
-  { name: "NEXUS", logo: nexusLogo.url },
-  { name: "CAFCA", logo: cafcaLogo.url },
-  { name: "Educate Young Girls", logo: eygLogo.url },
-  { name: "Worketyamo", logo: worketyamoLogo.url },
+  { name: "K&C Services", logo: partnerImages.kcServices },
+  { name: "NEXUS", logo: partnerImages.nexus },
+  { name: "CAFCA", logo: partnerImages.cafca },
+  { name: "Educate Young Girls", logo: partnerImages.eyg },
+  { name: "Worketyamo", logo: partnerImages.worketyamo },
 ];
 
 export const TrustedBySection = () => {

@@ -6,7 +6,7 @@ import { useInView } from "framer-motion";
 import { useRef } from "react";
 import { Check, Eye, Lightbulb, Target, Users, Award, Compass, Zap, Shield } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import APROPOS_IMAGE from "@/assets/photos/apropos-team.jpg";
+import APROPOS_IMAGE from "@/assets/photos/apropos-team.svg";
 
 const APropos = () => {
   const ref = useRef(null);

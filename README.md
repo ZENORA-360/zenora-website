@@ -1,73 +1,144 @@
-# Welcome to your Lovable project
+# ZENORA 360 — Site web corporate
 
-## Project info
+Site vitrine officiel de **ZENORA**, studio technologique basé à Yaoundé (Cameroun).  
+**Production** : [https://zenora360.com](https://zenora360.com)
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+> *De Zéro au Zénith* — digitalisation, développement web, marketing digital, design graphique et solutions métiers.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## Stack
 
-**Use Lovable**
+| Couche | Technologie |
+|--------|-------------|
+| Build | Vite 5, TypeScript, SWC |
+| UI | React 18, Tailwind CSS, shadcn/ui |
+| Routing | React Router v6 |
+| État | Zustand (blog), React Query |
+| Animations | Framer Motion, Three.js (hero 3D) |
+| i18n | Context FR/EN custom |
+| Déploiement | Docker (Bun build → Nginx) |
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## Prérequis
 
-**Use your preferred IDE**
+- Node.js 20+ (ou [Bun](https://bun.sh) pour le build Docker/CI)
+- npm ou bun
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+---
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## Développement local
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Cloner le dépôt
+git clone <repo-url>
+cd zenora360
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Installer les dépendances
+npm install
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Lancer le serveur de dev (port 8080)
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Ouvrir [http://localhost:8080](http://localhost:8080).
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Scripts disponibles
 
-**Use GitHub Codespaces**
+| Commande | Description |
+|----------|-------------|
+| `npm run dev` | Serveur de développement Vite |
+| `npm run build` | Build production (`dist/`) |
+| `npm run preview` | Prévisualiser le build |
+| `npm run lint` | ESLint |
+| `npm run test` | Tests Vitest |
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
 
-## What technologies are used for this project?
+## Structure du projet
 
-This project is built with:
+```
+zenora360/
+├── public/                 # Assets statiques (favicon, OG, sitemap, images)
+│   ├── images/
+│   │   ├── projects/     # Captures projets portfolio
+│   │   └── partners/     # Logos partenaires
+│   ├── llms.txt          # Fichier pour crawlers IA
+│   ├── robots.txt
+│   └── sitemap.xml
+├── src/
+│   ├── components/       # UI, sections, layout
+│   ├── contexts/         # i18n (LanguageContext)
+│   ├── hooks/            # useBlog, etc.
+│   ├── lib/              # site.ts (URLs, images), axios, utils
+│   ├── pages/            # Routes marketing + admin
+│   └── stores/           # Zustand (blog)
+├── Dockerfile            # Build Bun → Nginx
+├── docker-compose.yml    # Stack production
+└── index.html            # SEO statique + JSON-LD
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+---
 
-## How can I deploy this project?
+## Configuration site
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+Les constantes globales (domaine, chemins d'images) sont centralisées dans :
 
-## Can I connect a custom domain to my Lovable project?
+```ts
+// src/lib/site.ts
+export const SITE_URL = "https://zenora360.com";
+```
 
-Yes, you can!
+Le composant `SEO` (`src/components/SEO.tsx`) gère les meta dynamiques par page (Open Graph, Twitter, canonical, JSON-LD).
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+---
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Assets & images
+
+- **Logos** : `src/assets/logo-zenora-*.png`
+- **Illustrations** : `src/assets/photos/*.svg`
+- **Projets & partenaires** : `public/images/projects/`, `public/images/partners/` (servis à `/images/...`)
+
+Ne pas référencer d'URLs externes pour les assets — tout est local ou sous `zenora360.com`.
+
+---
+
+## SEO & IA
+
+- **Canonical** : `https://zenora360.com` (voir `src/lib/site.ts`)
+- **Sitemap** : `/sitemap.xml`
+- **Robots** : `/robots.txt` (admin exclu, crawlers IA autorisés sur le contenu public)
+- **LLMs** : `/llms.txt` — résumé structuré pour assistants IA (ChatGPT, Perplexity, etc.)
+- **JSON-LD** : Organization, WebSite, ProfessionalService dans `index.html` ; WebPage par route via `SEO`
+
+---
+
+## Déploiement
+
+### Docker
+
+```sh
+docker build -t zenora-web .
+docker run -p 8080:8080 zenora-web
+```
+
+### Production (OVH)
+
+Le déploiement passe par la pipeline CI/CD (`.github/workflows/ci-cd.yml`) :
+build → Harbor registry → `docker compose up` sur le serveur.
+
+Variables d'environnement serveur : voir `docker-compose.yml`.
+
+---
+
+## API blog
+
+Le frontend consomme `https://api.zenora360.com` pour le blog et l'admin.  
+En cas d'indisponibilité, un fallback local (mock + localStorage) prend le relais.
+
+---
+
+## Licence
+
+Propriétaire — © ZENORA. Tous droits réservés.

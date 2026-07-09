@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { useInView } from "framer-motion";
 import { useRef } from "react";
 import { Check, Eye, Lightbulb, Target, Users } from "lucide-react";
-import ABOUT_IMAGE from "@/assets/photos/about-team.jpg";
+import ABOUT_IMAGE from "@/assets/photos/about-team.svg";
 
 const benefits = [
   "Renforcer votre visibilité digitale",

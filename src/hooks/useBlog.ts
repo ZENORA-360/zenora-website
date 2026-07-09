@@ -3,12 +3,8 @@ import { useBlogStore } from '@/stores/blogStore';
 import api from '@/lib/axios';
 import { BlogPost, BlogFormData, BlogFilters, ConnectionStatus } from '@/types/blog';
 
-import ketcShot from '@/assets/projects/ketc.png.asset.json';
-import esopaShot from '@/assets/projects/esopa.png.asset.json';
-import erpShot from '@/assets/projects/erp-architecture.png.asset.json';
-import kazaShot from '@/assets/projects/kaza.webp.asset.json';
-import nexusLogo from '@/assets/partners/nexus.png.asset.json';
-import methodShot from '@/assets/photos/strategic-team.jpg';
+import { projectImages, partnerImages } from '@/lib/site';
+import methodShot from '@/assets/photos/about-team.svg';
 
 const mockPosts: BlogPost[] = [
   {
@@ -92,7 +88,7 @@ const mockPosts: BlogPost[] = [
 <p>A corporate site is not a brochure — it's a commercial tool. At ZENORA, we refuse purely cosmetic redesigns: every design decision, every line of code, every page serves a measurable business objective. The KETC case illustrates our conviction: corporate sobriety, when driven by real content strategy and flawless technical execution, consistently outperforms flashy but empty sites.</p>
 <p>See the live site: <a href="https://ketc-services.com/" target="_blank" rel="noopener">ketc-services.com</a>.</p>
 `,
-    coverImage: ketcShot.url,
+    coverImage: projectImages.ketc,
     author: { name: 'Équipe ZENORA' },
     category: 'Études de cas',
     categoryEn: 'Case studies',
@@ -183,7 +179,7 @@ const mockPosts: BlogPost[] = [
 <p>Working for an impact organization imposes a double demand: the rigor of a premium corporate site and the sensitivity of a human project. We don't build "cheap NGO sites" — we build institutional platforms able to carry a serious mission in front of serious counterparts.</p>
 <p>Visit the platform: <a href="https://esopa.org/" target="_blank" rel="noopener">esopa.org</a>.</p>
 `,
-    coverImage: esopaShot.url,
+    coverImage: projectImages.esopa,
     author: { name: 'Équipe ZENORA' },
     category: 'Études de cas',
     categoryEn: 'Case studies',
@@ -272,7 +268,7 @@ const mockPosts: BlogPost[] = [
 <h2>Ambition</h2>
 <p>Make NEXUS the de facto standard for managing independent restaurants and emerging chains in French-speaking Africa by 2027. We don't want to be "yet another ERP" — we want to be <em>the tool every serious African restaurateur installs the day they decide to professionalize their business</em>.</p>
 `,
-    coverImage: nexusLogo.url,
+    coverImage: partnerImages.nexus,
     author: { name: 'Équipe ZENORA' },
     category: 'Produits',
     categoryEn: 'Products',
@@ -377,7 +373,7 @@ const mockPosts: BlogPost[] = [
 <h2>Our conviction</h2>
 <p>African proptech is being born right now. The winners won't be those who copy Zillow or SeLoger — they'll be those who understand that the African tenant pays in cash or Mobile Money, that the African owner is often their own manager, and that trust is built with an honest interface, not marketing artifice. That's KAZA's bet.</p>
 `,
-    coverImage: kazaShot.url,
+    coverImage: projectImages.kaza,
     author: { name: 'Équipe ZENORA' },
     category: 'Produits',
     categoryEn: 'Products',
@@ -504,7 +500,7 @@ const mockPosts: BlogPost[] = [
 <p>After 18+ months of intensive internal use, we're gradually opening Zenora 360 to other digital agencies, consulting firms and creative studios who recognize their own problems in ours. Guided rollout, training included, hosted in Africa.</p>
 <p>See the public demo: <a href="https://erp-dev.zenora360.com/" target="_blank" rel="noopener">erp-dev.zenora360.com</a>.</p>
 `,
-    coverImage: erpShot.url,
+    coverImage: projectImages.erp,
     author: { name: 'Équipe ZENORA' },
     category: 'Produits',
     categoryEn: 'Products',
@@ -649,7 +645,14 @@ const mockPosts: BlogPost[] = [
 
 // Attach a default project gallery to each post (cover + related visuals).
 // Provides rich media for the "Project gallery" section on /blog/:slug.
-const galleryPool = [ketcShot.url, esopaShot.url, erpShot.url, kazaShot.url, nexusLogo.url, methodShot];
+const galleryPool = [
+  projectImages.ketc,
+  projectImages.esopa,
+  projectImages.erp,
+  projectImages.kaza,
+  partnerImages.nexus,
+  methodShot,
+];
 mockPosts.forEach((p, i) => {
   if (!p.gallery || p.gallery.length === 0) {
     const rotated = [...galleryPool.slice(i % galleryPool.length), ...galleryPool.slice(0, i % galleryPool.length)];

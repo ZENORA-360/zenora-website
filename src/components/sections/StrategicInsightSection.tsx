@@ -4,7 +4,7 @@ import { useRef } from "react";
 import { CheckCircle2, Shield, HeadphonesIcon } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
 
-import STRATEGIC_IMAGE from "@/assets/photos/strategic-team.jpg";
+import STRATEGIC_IMAGE from "@/assets/photos/strategic-team.svg";
 
 export const StrategicInsightSection = () => {
   const ref = useRef(null);
