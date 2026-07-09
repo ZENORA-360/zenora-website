@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { useInView } from "framer-motion";
 import { useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
-import { useLanguage } from "@/contexts/useLanguage";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export const FAQSection = () => {
   const ref = useRef(null);

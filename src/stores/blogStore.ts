@@ -123,7 +123,7 @@ export const useBlogStore = create<BlogState>()(
       },
     }),
     {
-      name: 'zenora-blog-store',
+      name: 'zenora-blog-store-v4',
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         posts: state.posts,

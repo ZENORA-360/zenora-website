@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { useLanguage } from "@/contexts/useLanguage";
+import { useLanguage } from "@/contexts/LanguageContext";
 import marbleBg from "@/assets/marble-bg.jpg";
 
 const Methode = () => {
@@ -104,21 +104,29 @@ const Methode = () => {
       <Header />
       <main className="pt-20">
         {/* Hero Section */}
-        <section className="section-padding bg-gradient-to-b from-muted/30 to-background">
-          <div className="container-zenora">
+        <section className="pt-40 pb-24 md:pt-48 md:pb-32 relative overflow-hidden border-b border-border/60">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-to-b from-muted/40 via-background to-background" />
+            <div className="absolute top-1/3 left-0 w-[60vw] h-[60vw] max-w-[800px] max-h-[800px] rounded-full bg-primary/8 blur-[130px] -translate-x-1/3" />
+            <div className="absolute inset-0 grid-pattern opacity-[0.1]" />
+          </div>
+          <div className="container-zenora relative">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="text-center max-w-4xl mx-auto"
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+              className="max-w-4xl"
             >
-              <span className="inline-block px-4 py-2 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-6">
-                {t("method.label")}
-              </span>
-              <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6">
+              <div className="flex items-center gap-3 mb-6">
+                <span className="h-px w-8 bg-primary" />
+                <span className="text-xs font-semibold text-primary tracking-[0.3em] uppercase font-display">
+                  {t("method.title")}
+                </span>
+              </div>
+              <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold text-foreground leading-[1.02] tracking-tight mb-6">
                 {t("method.title")} <span className="text-gradient-gold">{t("method.titleHighlight")}</span> {t("method.titleEnd")}
               </h1>
-              <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
+              <p className="text-base md:text-xl text-muted-foreground leading-relaxed max-w-3xl">
                 {t("method.description")}
               </p>
             </motion.div>

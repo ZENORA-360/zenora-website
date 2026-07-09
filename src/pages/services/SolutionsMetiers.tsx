@@ -19,7 +19,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
-import { useLanguage } from "@/contexts/useLanguage";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function SolutionsMetiers() {
   const ref = useRef(null);

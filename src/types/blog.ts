@@ -20,6 +20,7 @@ export interface BlogPost {
   updatedAt?: string;
   readingTime: number;
   isPublished: boolean;
+  gallery?: string[];
 }
 
 export interface BlogFormData {

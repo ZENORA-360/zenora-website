@@ -17,7 +17,7 @@ import {
   Cog,
   Layers,
 } from "lucide-react";
-import { useLanguage } from "@/contexts/useLanguage";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export const ServicesSection = () => {
   const ref = useRef(null);

@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { useInView } from "framer-motion";
 import { useRef } from "react";
 import { Check, Eye, Lightbulb, Target, Users } from "lucide-react";
-import heroDigital from "@/assets/hero-digital.jpg";
+import ABOUT_IMAGE from "@/assets/photos/about-team.jpg";
 
 const benefits = [
   "Renforcer votre visibilité digitale",
@@ -54,7 +54,7 @@ export const AboutSection = () => {
             <div className="relative rounded-xl overflow-hidden shadow-elegant">
               <div className="absolute inset-0 border-2 border-primary/30 rounded-xl z-10 pointer-events-none" />
               <img
-                src={heroDigital}
+                src={ABOUT_IMAGE}
                 alt="Équipe ZENORA au travail"
                 className="w-full h-[400px] lg:h-[500px] object-cover"
               />

@@ -20,12 +20,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { useLanguage } from "@/contexts/useLanguage";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { MouseParticles } from "@/components/MouseParticles";
-import logoZenora from "@/assets/logo-zenora.png";
 
 const socialLinks = [
-  { icon: Facebook, href: "https://facebook.com/zenora_officiel", label: "Facebook" },
+  { icon: Facebook, href: "https://www.facebook.com/zenoraofficiel", label: "Facebook" },
   { icon: Instagram, href: "https://instagram.com/zenora_officiel", label: "Instagram" },
   { icon: Linkedin, href: "https://linkedin.com/company/zenora", label: "LinkedIn" },
 ];
@@ -104,21 +103,29 @@ const Contact = () => {
       <Header />
       <main className="pt-20 relative z-10">
         {/* Hero Section */}
-        <section className="section-padding bg-gradient-to-b from-muted/30 to-background">
-          <div className="container-zenora">
+        <section className="pt-40 pb-24 md:pt-48 md:pb-32 relative overflow-hidden border-b border-border/60">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-to-b from-muted/40 via-background to-background" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[60vw] h-[60vw] max-w-[800px] max-h-[800px] rounded-full bg-primary/8 blur-[130px]" />
+            <div className="absolute inset-0 grid-pattern opacity-[0.1]" />
+          </div>
+          <div className="container-zenora relative">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="text-center max-w-4xl mx-auto"
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+              className="max-w-4xl"
             >
-              <span className="inline-block px-4 py-2 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-6">
-                {t("contact.label")}
-              </span>
-              <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6">
+              <div className="flex items-center gap-3 mb-6">
+                <span className="h-px w-8 bg-primary" />
+                <span className="text-xs font-semibold text-primary tracking-[0.3em] uppercase font-display">
+                  {t("contact.title")}
+                </span>
+              </div>
+              <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold text-foreground leading-[1.02] tracking-tight mb-6">
                 {t("contact.title")} <span className="text-gradient-gold">{t("contact.titleHighlight")}</span>
               </h1>
-              <p className="text-lg md:text-xl text-muted-foreground leading-relaxed">
+              <p className="text-base md:text-xl text-muted-foreground leading-relaxed max-w-2xl">
                 {t("contact.description")}
               </p>
             </motion.div>
@@ -169,9 +176,7 @@ const Contact = () => {
                 transition={{ duration: 0.6, delay: 0.2 }}
                 className="space-y-8"
               >
-                <div className="flex items-center gap-4 mb-8">
-                  <img src={logoZenora} alt="Zenora" className="h-16 w-auto" />
-                </div>
+                <div className="mb-2" />
 
                 <p className="text-secondary-foreground/80 leading-relaxed text-lg">
                   {t("contact.collab")}
@@ -213,7 +218,6 @@ const Contact = () => {
                       </a>
                     ))}
                   </div>
-                  <p className="text-sm text-secondary-foreground/60 mt-3">@zenora_officiel</p>
                 </div>
               </motion.div>
 
@@ -280,7 +284,7 @@ const Contact = () => {
         </section>
 
         {/* WhatsApp CTA Section */}
-        <section className="py-16 md:py-24 bg-background relative overflow-hidden">
+        <section className="py-12 md:py-16 bg-background relative overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,hsl(var(--primary)/0.06),transparent_70%)]" />
           <div className="container-zenora relative">
             <motion.a

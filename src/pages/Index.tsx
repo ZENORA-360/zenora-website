@@ -4,6 +4,7 @@ import { HeroSection } from "@/components/sections/HeroSection";
 import { TrustedBySection } from "@/components/sections/TrustedBySection";
 import { CorePillarsSection } from "@/components/sections/CorePillarsSection";
 import { StrategicInsightSection } from "@/components/sections/StrategicInsightSection";
+import { HorizontalScrollSection } from "@/components/sections/HorizontalScrollSection";
 import { FAQSection } from "@/components/sections/FAQSection";
 import { CTASection } from "@/components/sections/CTASection";
 import { SEO } from "@/components/SEO";
@@ -17,6 +18,7 @@ const Index = () => {
         <HeroSection />
         <TrustedBySection />
         <CorePillarsSection />
+        <HorizontalScrollSection />
         <StrategicInsightSection />
         <FAQSection />
         <CTASection />
@@ -27,3 +29,4 @@ const Index = () => {
 };
 
 export default Index;
+

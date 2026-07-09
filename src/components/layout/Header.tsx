@@ -2,11 +2,10 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ChevronDown } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
-import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
-import { useLanguage } from "@/contexts/useLanguage";
+import { useLanguage } from "@/contexts/LanguageContext";
 import logoZenoraLight from "@/assets/logo-zenora-light.png";
 import logoZenoraDark from "@/assets/logo-zenora-dark.png";
 
@@ -15,10 +14,8 @@ export const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isServicesOpen, setIsServicesOpen] = useState(false);
   const [isMobileServicesOpen, setIsMobileServicesOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const location = useLocation();
   const { t } = useLanguage();
-  const { resolvedTheme } = useTheme();
 
   const servicesSubLinks = [
     { href: "/services/developpement-web", label: t("nav.webDev") },
@@ -30,13 +27,14 @@ export const Header = () => {
   const navLinks = [
     { href: "/", label: t("nav.home") },
     { href: "/services", label: t("nav.services"), hasDropdown: true },
+    { href: "/projects", label: t("nav.projects") },
     { href: "/a-propos", label: t("nav.about") },
     { href: "/methode", label: t("nav.method") },
     { href: "/blog", label: t("nav.blog") },
     { href: "/contact", label: t("nav.contact") },
   ];
 
-  useEffect(() => { setMounted(true); }, []);
+  
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 50);
@@ -60,8 +58,6 @@ export const Header = () => {
     return () => { document.body.style.overflow = ""; };
   }, [isMobileMenuOpen]);
 
-  // Logo: dark logo for light mode, light logo for dark mode
-  const logoSrc = mounted && resolvedTheme === "dark" ? logoZenoraDark : logoZenoraLight;
 
   const isActive = (href: string) => {
     if (href === "/") return location.pathname === "/";
@@ -69,25 +65,27 @@ export const Header = () => {
   };
 
   return (
-    <motion.header
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        isScrolled
+    <>
+    <header
+      className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 animate-fade-in ${
+        isScrolled || isMobileMenuOpen
           ? "bg-background/95 backdrop-blur-xl border-b border-border shadow-lg"
           : "bg-transparent"
       }`}
     >
       <div className="container-zenora">
         <div className="flex items-center justify-between h-20">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-3 group">
-            <motion.img
-              src={logoSrc}
+          {/* Logo - dual image swap for instant theme switch (no JS needed) */}
+          <Link to="/" className="flex items-center gap-3 group" aria-label="ZENORA — Accueil">
+            <img
+              src={logoZenoraLight}
               alt="Zenora Logo"
-              className="h-12 md:h-14 w-auto transition-transform duration-500 group-hover:scale-105"
-              whileHover={{ scale: 1.02 }}
+              className="h-12 md:h-14 w-auto block dark:hidden transition-transform duration-300 group-hover:scale-105"
+            />
+            <img
+              src={logoZenoraDark}
+              alt="Zenora Logo"
+              className="h-12 md:h-14 w-auto hidden dark:block transition-transform duration-300 group-hover:scale-105"
             />
           </Link>
 
@@ -189,105 +187,97 @@ export const Header = () => {
           </div>
         </div>
       </div>
+    </header>
 
-      {/* Mobile Menu - Full screen overlay */}
-      <AnimatePresence>
-        {isMobileMenuOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="lg:hidden fixed inset-0 top-20 bg-background/98 backdrop-blur-xl z-50 overflow-y-auto"
-          >
-            <nav className="container-zenora py-8 flex flex-col gap-1">
-              {navLinks.map((link, index) => (
-                <motion.div 
-                  key={link.href}
-                  initial={{ opacity: 0, x: -30 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -30 }}
-                  transition={{ delay: index * 0.06, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                >
-                  {link.hasDropdown ? (
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <Link
-                          to={link.href}
-                          className={`flex-1 text-lg font-medium py-4 transition-colors ${
-                            isActive(link.href) ? "text-primary" : "text-foreground/80 hover:text-primary"
-                          }`}
-                        >
-                          {link.label}
-                        </Link>
-                        <button
-                          onClick={() => setIsMobileServicesOpen(!isMobileServicesOpen)}
-                          className="p-3 text-foreground/60 hover:text-primary transition-colors"
-                          aria-label="Toggle services submenu"
-                        >
-                          <ChevronDown className={`w-5 h-5 transition-transform duration-300 ${isMobileServicesOpen ? "rotate-180" : ""}`} />
-                        </button>
-                      </div>
-                      <AnimatePresence>
-                        {isMobileServicesOpen && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                            className="overflow-hidden"
-                          >
-                            <div className="pl-4 border-l-2 border-primary/30 ml-3 space-y-1 pb-3">
-                              {servicesSubLinks.map((subLink, subIndex) => (
-                                <motion.div
-                                  key={subLink.href}
-                                  initial={{ opacity: 0, x: -10 }}
-                                  animate={{ opacity: 1, x: 0 }}
-                                  transition={{ delay: subIndex * 0.05 }}
-                                >
-                                  <Link
-                                    to={subLink.href}
-                                    className={`block text-sm py-2.5 px-3 rounded-lg transition-colors ${
-                                      isActive(subLink.href)
-                                        ? "text-primary bg-primary/10"
-                                        : "text-muted-foreground hover:text-primary hover:bg-accent"
-                                    }`}
-                                  >
-                                    {subLink.label}
-                                  </Link>
-                                </motion.div>
-                              ))}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                  ) : (
-                    <Link
-                      to={link.href}
-                      className={`block text-lg font-medium py-4 transition-colors border-b border-border/30 ${
-                        isActive(link.href) ? "text-primary" : "text-foreground/80 hover:text-primary"
-                      }`}
-                    >
-                      {link.label}
-                    </Link>
-                  )}
-                </motion.div>
-              ))}
+
+    {/* Mobile Menu — Rendered as sibling to escape header stacking context */}
+    <AnimatePresence>
+      {isMobileMenuOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.25 }}
+          style={{ zIndex: 99 }}
+          className="lg:hidden fixed inset-0 top-20 bg-background overflow-y-auto border-t border-border shadow-2xl"
+        >
+          <nav className="container-zenora py-8 flex flex-col gap-1">
+            {navLinks.map((link, index) => (
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.35, duration: 0.4 }}
-                className="pt-6"
+                key={link.href}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ delay: index * 0.05, duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
               >
-                <Button variant="gold" className="w-full" size="lg" asChild>
-                  <Link to="/contact">{t("hero.cta.start")}</Link>
-                </Button>
+                {link.hasDropdown ? (
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <Link
+                        to={link.href}
+                        className={`flex-1 text-lg font-medium py-4 transition-colors ${
+                          isActive(link.href) ? "text-primary" : "text-foreground/80 hover:text-primary"
+                        }`}
+                      >
+                        {link.label}
+                      </Link>
+                      <button
+                        onClick={() => setIsMobileServicesOpen(!isMobileServicesOpen)}
+                        className="p-3 text-foreground/60 hover:text-primary transition-colors"
+                        aria-label="Toggle services submenu"
+                      >
+                        <ChevronDown className={`w-5 h-5 transition-transform duration-300 ${isMobileServicesOpen ? "rotate-180" : ""}`} />
+                      </button>
+                    </div>
+                    <AnimatePresence>
+                      {isMobileServicesOpen && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                          className="overflow-hidden"
+                        >
+                          <div className="pl-4 border-l-2 border-primary/30 ml-3 space-y-1 pb-3">
+                            {servicesSubLinks.map((subLink) => (
+                              <Link
+                                key={subLink.href}
+                                to={subLink.href}
+                                className={`block text-sm py-2.5 px-3 rounded-lg transition-colors ${
+                                  isActive(subLink.href)
+                                    ? "text-primary bg-primary/10"
+                                    : "text-muted-foreground hover:text-primary hover:bg-accent"
+                                }`}
+                              >
+                                {subLink.label}
+                              </Link>
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                ) : (
+                  <Link
+                    to={link.href}
+                    className={`block text-lg font-medium py-4 transition-colors border-b border-border/30 ${
+                      isActive(link.href) ? "text-primary" : "text-foreground/80 hover:text-primary"
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                )}
               </motion.div>
-            </nav>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </motion.header>
+            ))}
+            <div className="pt-6">
+              <Button variant="gold" className="w-full" size="lg" asChild>
+                <Link to="/contact">{t("hero.cta.start")}</Link>
+              </Button>
+            </div>
+          </nav>
+        </motion.div>
+      )}
+    </AnimatePresence>
+    </>
   );
 };

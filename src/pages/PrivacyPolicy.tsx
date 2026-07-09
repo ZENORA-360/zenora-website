@@ -2,7 +2,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { SEO } from "@/components/SEO";
 import { motion } from "framer-motion";
-import { useLanguage } from "@/contexts/useLanguage";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Shield, Eye, Lock, Database, UserCheck, Globe, Mail } from "lucide-react";
 
 const PrivacyPolicy = () => {

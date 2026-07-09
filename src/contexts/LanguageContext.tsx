@@ -1,24 +1,23 @@
-/* eslint-disable react-refresh/only-export-components */
-
-import React, { createContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
 export type Language = "fr" | "en";
 
-export interface LanguageContextType {
+interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
   t: (key: string) => string;
 }
 
-export const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
-const translations = {
+export const translations = {
   fr: {
     // Navigation
     "nav.home": "Accueil",
     "nav.about": "À propos",
     "nav.method": "Méthode",
     "nav.services": "Services",
+    "nav.projects": "Projets",
     "nav.contact": "Contact",
     "nav.webDev": "Développement Web",
     "nav.marketing": "Marketing Digital",
@@ -27,6 +26,11 @@ const translations = {
     
     // Hero Section
     "hero.futureReady": "Future Ready",
+    "hero.tagline": "Studio technologique — Yaoundé, Cameroun",
+    "hero.pitch": "Nous concevons des plateformes web, des ERP métiers et des identités de marque pour les entreprises et institutions africaines qui exigent un standard international.",
+    "hero.stat.projects": "Projets livrés",
+    "hero.stat.sectors": "Secteurs couverts",
+    "hero.stat.countries": "Pays d'intervention",
     "hero.slogan.from": "De",
     "hero.slogan.zero": "Zéro",
     "hero.slogan.to": "au",
@@ -41,6 +45,7 @@ const translations = {
     "hero.feature.marketing": "Marketing Digital",
     "hero.feature.design": "Design Graphique",
     "hero.feature.solutions": "Solutions Métiers",
+
     
     // Index Page - About Preview
     "index.about.label": "À PROPOS",
@@ -498,6 +503,7 @@ const translations = {
     "nav.about": "About",
     "nav.method": "Method",
     "nav.services": "Services",
+    "nav.projects": "Projects",
     "nav.contact": "Contact",
     "nav.webDev": "Web Development",
     "nav.marketing": "Digital Marketing",
@@ -506,6 +512,11 @@ const translations = {
     
     // Hero Section
     "hero.futureReady": "Future Ready",
+    "hero.tagline": "Technology studio — Yaoundé, Cameroon",
+    "hero.pitch": "We design web platforms, business ERPs and brand identities for African companies and institutions that demand an international standard.",
+    "hero.stat.projects": "Shipped projects",
+    "hero.stat.sectors": "Sectors covered",
+    "hero.stat.countries": "Countries served",
     "hero.slogan.from": "From",
     "hero.slogan.zero": "Zero",
     "hero.slogan.to": "to",
@@ -520,6 +531,7 @@ const translations = {
     "hero.feature.marketing": "Digital Marketing",
     "hero.feature.design": "Graphic Design",
     "hero.feature.solutions": "Business Solutions",
+
     
     // Index Page - About Preview
     "index.about.label": "ABOUT",
@@ -1004,4 +1016,10 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
   );
 };
 
-// `useLanguage` hook is defined in `./useLanguage` to satisfy react-refresh rules.
+export const useLanguage = () => {
+  const context = useContext(LanguageContext);
+  if (context === undefined) {
+    throw new Error("useLanguage must be used within a LanguageProvider");
+  }
+  return context;
+};

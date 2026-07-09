@@ -3,7 +3,7 @@ import { useInView } from "framer-motion";
 import { useRef } from "react";
 import { Globe, Megaphone, Palette, Cloud, ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useLanguage } from "@/contexts/useLanguage";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export const CorePillarsSection = () => {
   const ref = useRef(null);
@@ -13,34 +13,34 @@ export const CorePillarsSection = () => {
   const pillars = [
     {
       icon: Globe,
-      title: language === "fr" ? "Transformation Digitale" : "Digital Transformation",
-      description: language === "fr" 
-        ? "Modernisation des systèmes existants et intégration de l'IA pour des opérations pérennes."
-        : "Modernizing legacy systems and integrating AI for future-proof operations.",
+      title: language === "fr" ? "Développement web & ERP" : "Web & ERP development",
+      description: language === "fr"
+        ? "Sites corporate, plateformes SaaS et ERP métier, conçus sur mesure et documentés."
+        : "Corporate websites, SaaS platforms and business ERPs, built to spec and documented.",
       link: "/services/developpement-web",
     },
     {
       icon: Megaphone,
-      title: language === "fr" ? "Stratégie Marketing" : "Marketing Strategy",
+      title: language === "fr" ? "Marketing digital" : "Digital marketing",
       description: language === "fr"
-        ? "Campagnes data-driven et analyses de marché qui convertissent les prospects en ambassadeurs."
-        : "Data-driven campaigns and market analysis that convert leads into loyalists.",
+        ? "Stratégie de contenu, SEO, campagnes payantes, avec un reporting mensuel chiffré."
+        : "Content strategy, SEO, paid campaigns, with a measurable monthly report.",
       link: "/services/marketing-digital",
     },
     {
       icon: Palette,
-      title: language === "fr" ? "Design Créatif" : "Creative Design",
+      title: language === "fr" ? "Design & identité" : "Design & identity",
       description: language === "fr"
-        ? "Esthétiques qui incarnent votre identité de marque avec un design UI/UX parfait au pixel près."
-        : "Aesthetics that embody your brand identity with pixel-perfect UI/UX design.",
+        ? "Identité visuelle, charte graphique, UI/UX. Un système cohérent, pas une image ponctuelle."
+        : "Visual identity, brand system, UI/UX. A coherent system, not a one-off image.",
       link: "/services/design-graphic",
     },
     {
       icon: Cloud,
-      title: language === "fr" ? "Solutions Cloud" : "Cloud Solutions",
+      title: language === "fr" ? "Solutions métiers" : "Business solutions",
       description: language === "fr"
-        ? "Infrastructure scalable pour la croissance, la sécurité et la performance."
-        : "Scalable infrastructure for growth, security, and performance.",
+        ? "Automatisation de processus, intégrations, hébergement et maintenance sous contrat."
+        : "Process automation, integrations, hosting and maintenance under contract.",
       link: "/services/solutions-metiers",
     },
   ];

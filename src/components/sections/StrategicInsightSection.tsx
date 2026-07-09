@@ -2,8 +2,9 @@ import { motion } from "framer-motion";
 import { useInView } from "framer-motion";
 import { useRef } from "react";
 import { CheckCircle2, Shield, HeadphonesIcon } from "lucide-react";
-import { useLanguage } from "@/contexts/useLanguage";
-import heroDigital from "@/assets/hero-digital.jpg";
+import { useLanguage } from "@/contexts/LanguageContext";
+
+import STRATEGIC_IMAGE from "@/assets/photos/strategic-team.jpg";
 
 export const StrategicInsightSection = () => {
   const ref = useRef(null);
@@ -13,24 +14,24 @@ export const StrategicInsightSection = () => {
   const features = [
     {
       icon: CheckCircle2,
-      title: language === "fr" ? "Méthodologie Agile" : "Agile Methodology",
+      title: language === "fr" ? "Cadrage & itération" : "Framing & iteration",
       description: language === "fr"
-        ? "Itération rapide et livraison continue pour vous garder en avance."
-        : "Rapid iteration and continuous delivery to keep you ahead.",
+        ? "Cahier des charges rédigé, sprints courts, livrables validés à chaque étape."
+        : "Written brief, short sprints, deliverables validated at every step.",
     },
     {
       icon: Shield,
-      title: language === "fr" ? "Sécurité d'abord" : "Security First",
+      title: language === "fr" ? "Code sous contrôle" : "Code under control",
       description: language === "fr"
-        ? "Protocoles de sécurité de niveau entreprise intégrés dans chaque ligne de code."
-        : "Enterprise-grade security protocols embedded in every line of code.",
+        ? "Revue de code, tests, CI/CD, sauvegardes et journalisation dès le premier commit."
+        : "Code review, tests, CI/CD, backups and logging from the first commit.",
     },
     {
       icon: HeadphonesIcon,
-      title: language === "fr" ? "Support 24/7" : "24/7 Support",
+      title: language === "fr" ? "Suivi post-livraison" : "Post-launch support",
       description: language === "fr"
-        ? "Équipes dédiées garantissant que vos systèmes ne dorment jamais."
-        : "Dedicated teams ensuring your systems never sleep.",
+        ? "Maintenance corrective et évolutive, SLA écrit, un interlocuteur unique."
+        : "Corrective and evolutive maintenance, written SLA, a single point of contact.",
     },
   ];
 
@@ -48,13 +49,14 @@ export const StrategicInsightSection = () => {
             transition={{ duration: 0.8 }}
             className="order-2 md:order-1 relative rounded-2xl overflow-hidden aspect-square group"
           >
-            <div className="absolute inset-0 bg-primary/20 mix-blend-overlay z-10" />
             <img
-              src={heroDigital}
+              src={STRATEGIC_IMAGE}
               alt={language === "fr" ? "Équipe travaillant sur des solutions digitales" : "Team working on digital solutions"}
-              className="object-cover w-full h-full grayscale group-hover:grayscale-0 transition-all duration-700 group-hover:scale-105"
+              className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-105"
             />
-            <div className="absolute inset-0 border border-border rounded-2xl z-20 pointer-events-none" />
+            <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent pointer-events-none" />
+            <div className="absolute inset-0 border border-border rounded-2xl pointer-events-none" />
+
           </motion.div>
 
           {/* Content */}
@@ -65,17 +67,17 @@ export const StrategicInsightSection = () => {
             className="order-1 md:order-2 flex flex-col gap-8"
           >
             <h2 className="font-display text-3xl md:text-4xl lg:text-5xl font-black leading-tight text-foreground">
-              {language === "fr" ? "Vision stratégique et" : "Strategic insight meets"}{" "}
+              {language === "fr" ? "Une équipe technique," : "A technical team,"}{" "}
               <br />
               <span className="text-gradient-gold">
-                {language === "fr" ? "maîtrise technique." : "technical mastery."}
+                {language === "fr" ? "un engagement écrit." : "a written commitment."}
               </span>
             </h2>
 
             <p className="text-muted-foreground text-lg leading-relaxed">
               {language === "fr"
-                ? "Nous ne construisons pas juste des logiciels ; nous créons des écosystèmes. Notre approche combine une connaissance approfondie de l'industrie avec une technologie de pointe pour résoudre des défis commerciaux complexes."
-                : "We don't just build software; we engineer ecosystems. Our approach combines deep industry knowledge with cutting-edge technology to solve complex business challenges."}
+                ? "Chaque projet est cadré par un devis, un planning et un référent unique. Le code, les accès et la documentation vous appartiennent — livrés sur votre dépôt, sur votre infrastructure."
+                : "Every project is framed by a written quote, a schedule and a single point of contact. Code, credentials and documentation belong to you — delivered on your repository, on your infrastructure."}
             </p>
 
             {/* Features */}

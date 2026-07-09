@@ -5,8 +5,8 @@ import { motion } from "framer-motion";
 import { useInView } from "framer-motion";
 import { useRef } from "react";
 import { Check, Eye, Lightbulb, Target, Users, Award, Compass, Zap, Shield } from "lucide-react";
-import { useLanguage } from "@/contexts/useLanguage";
-import heroDigital from "@/assets/hero-digital.jpg";
+import { useLanguage } from "@/contexts/LanguageContext";
+import APROPOS_IMAGE from "@/assets/photos/apropos-team.jpg";
 
 const APropos = () => {
   const ref = useRef(null);
@@ -57,28 +57,29 @@ const APropos = () => {
       <Header />
       <main className="pt-20">
         {/* Hero Section */}
-        <section className="section-padding bg-gradient-to-b from-muted/30 via-accent/10 to-background relative overflow-hidden">
-          <div className="absolute top-10 right-1/4 w-80 h-80 bg-primary/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-primary/3 rounded-full blur-3xl" />
+        <section className="pt-40 pb-24 md:pt-48 md:pb-32 relative overflow-hidden border-b border-border/60">
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-to-b from-muted/40 via-background to-background" />
+            <div className="absolute top-1/2 right-0 w-[60vw] h-[60vw] max-w-[800px] max-h-[800px] rounded-full bg-primary/8 blur-[130px] translate-x-1/3" />
+            <div className="absolute inset-0 grid-pattern opacity-[0.1]" />
+          </div>
           <div className="container-zenora relative">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="text-center max-w-4xl mx-auto"
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+              className="max-w-4xl"
             >
-              <motion.span
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.15 }}
-                className="inline-block px-4 py-2 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-6"
-              >
-                {t("about.label")}
-              </motion.span>
-              <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground mb-6">
+              <div className="flex items-center gap-3 mb-6">
+                <span className="h-px w-8 bg-primary" />
+                <span className="text-xs font-semibold text-primary tracking-[0.3em] uppercase font-display">
+                  {t("about.title")}
+                </span>
+              </div>
+              <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold text-foreground leading-[1.02] tracking-tight mb-6">
                 {t("about.title")} <span className="text-gradient-gold">{t("about.titleHighlight")}</span>
               </h1>
-              <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-3xl mx-auto">
+              <p className="text-base md:text-xl text-muted-foreground leading-relaxed max-w-3xl">
                 {t("about.description")}
               </p>
             </motion.div>
@@ -101,7 +102,7 @@ const APropos = () => {
                 <div className="relative rounded-xl overflow-hidden shadow-elegant">
                   <div className="absolute inset-0 border-2 border-primary/30 rounded-xl z-10 pointer-events-none" />
                   <img
-                    src={heroDigital}
+                    src={APROPOS_IMAGE}
                     alt={t("about.imageAlt")}
                     className="w-full h-[400px] lg:h-[500px] object-cover"
                   />

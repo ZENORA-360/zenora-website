@@ -7,7 +7,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
-import { useLanguage } from "@/contexts/useLanguage";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 export default function Services() {
   const ref = useRef(null);
@@ -26,7 +26,6 @@ export default function Services() {
         t("services.webDev.feature3"),
         t("services.webDev.feature4"),
       ],
-      color: "from-blue-500/20 to-cyan-500/20",
     },
     {
       id: "marketing-digital",
@@ -39,7 +38,6 @@ export default function Services() {
         t("services.marketing.feature3"),
         t("services.marketing.feature4"),
       ],
-      color: "from-orange-500/20 to-red-500/20",
     },
     {
       id: "design-graphic",
@@ -52,7 +50,6 @@ export default function Services() {
         t("services.design.feature3"),
         t("services.design.feature4"),
       ],
-      color: "from-purple-500/20 to-pink-500/20",
     },
     {
       id: "solutions-metiers",
@@ -65,7 +62,6 @@ export default function Services() {
         t("services.solutions.feature3"),
         t("services.solutions.feature4"),
       ],
-      color: "from-green-500/20 to-emerald-500/20",
     },
   ];
 
@@ -78,23 +74,33 @@ export default function Services() {
       <Header />
       <main>
         {/* Hero Section */}
-        <section className="pt-32 pb-20 bg-gradient-to-b from-accent/30 to-background relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/5" />
-          
+        <section className="pt-40 pb-24 md:pt-48 md:pb-32 relative overflow-hidden border-b border-border/60">
+          {/* Ambient 3D-ish backdrop */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0 bg-gradient-to-b from-muted/40 via-background to-background" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70vw] h-[70vw] max-w-[900px] max-h-[900px] rounded-full bg-primary/8 blur-[130px]" />
+            <div className="absolute inset-0 grid-pattern opacity-[0.12]" />
+          </div>
+
           <div className="container-zenora relative">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="text-center max-w-3xl mx-auto"
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+              className="max-w-4xl"
             >
-              <span className="inline-block px-4 py-2 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4">
-                {t("services.label")}
-              </span>
-              <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
-                {t("services.title")} <span className="text-gradient-gold">{t("services.titleHighlight")}</span> {t("services.titleEnd")}
+              <div className="flex items-center gap-3 mb-6">
+                <span className="h-px w-8 bg-primary" />
+                <span className="text-xs font-semibold text-primary tracking-[0.3em] uppercase font-display">
+                  {t("services.title")}
+                </span>
+              </div>
+              <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold tracking-tight text-foreground leading-[1.02] mb-6">
+                {t("services.title")}{" "}
+                <span className="text-gradient-gold">{t("services.titleHighlight")}</span>{" "}
+                {t("services.titleEnd")}
               </h1>
-              <p className="text-lg text-muted-foreground">
+              <p className="text-base md:text-xl text-muted-foreground leading-relaxed max-w-2xl">
                 {t("services.description")}
               </p>
             </motion.div>
@@ -116,10 +122,10 @@ export default function Services() {
                     to={`/services/${service.id}`}
                     className="block h-full group"
                   >
-                    <div className={`relative h-full p-8 rounded-2xl border border-border bg-gradient-to-br ${service.color} hover:border-primary/40 transition-all duration-300 overflow-hidden`}>
+                    <div className="relative h-full p-8 rounded-lg border border-border bg-card hover:border-primary/50 hover:bg-primary/5 transition-all duration-300 overflow-hidden">
                       {/* Icon */}
-                      <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mb-6 group-hover:bg-primary/20 transition-colors">
-                        <service.icon className="w-7 h-7 text-primary" />
+                      <div className="w-14 h-14 rounded-md bg-gradient-gold flex items-center justify-center mb-6 shadow-gold group-hover:scale-105 transition-transform duration-300">
+                        <service.icon className="w-7 h-7 text-primary-foreground" />
                       </div>
 
                       {/* Content */}

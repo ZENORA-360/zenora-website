@@ -8,7 +8,7 @@ import { SEO } from "@/components/SEO";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useBlog } from "@/hooks/useBlog";
-import { useLanguage } from "@/contexts/useLanguage";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { BlogPost } from "@/types/blog";
 
 const BlogCard = ({ post, index, language }: { post: BlogPost; index: number; language: string }) => {
@@ -184,21 +184,19 @@ export default function Blog() {
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="text-center max-w-3xl mx-auto"
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+              className="max-w-4xl"
             >
-              <motion.span
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.1 }}
-                className="inline-block px-4 py-2 bg-primary/10 text-primary text-sm font-semibold rounded-full mb-4"
-              >
-                {t("blog.label")}
-              </motion.span>
-              <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
+              <div className="flex items-center gap-3 mb-6">
+                <span className="h-px w-8 bg-primary" />
+                <span className="text-xs font-semibold text-primary tracking-[0.3em] uppercase font-display">
+                  {t("blog.title")}
+                </span>
+              </div>
+              <h1 className="font-display text-4xl md:text-6xl lg:text-7xl font-bold text-foreground leading-[1.02] tracking-tight mb-6">
                 {t("blog.title")} <span className="text-gradient-gold">{t("blog.titleHighlight")}</span>
               </h1>
-              <p className="text-lg md:text-xl text-muted-foreground leading-relaxed max-w-2xl mx-auto">
+              <p className="text-base md:text-xl text-muted-foreground leading-relaxed max-w-2xl">
                 {t("blog.description")}
               </p>
             </motion.div>

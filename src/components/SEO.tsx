@@ -1,5 +1,5 @@
 import { Helmet } from "react-helmet-async";
-import { useLanguage } from "@/contexts/useLanguage";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface SEOProps {
   title?: string;
@@ -60,8 +60,11 @@ export const SEO = ({
       <meta name="twitter:image" content={image} />
       <meta name="twitter:site" content="@zenora_officiel" />
       
-      {/* Canonical */}
-      {url && <link rel="canonical" href={url} />}
+      {/* Canonical + hreflang */}
+      <link rel="canonical" href={url || (typeof window !== "undefined" ? window.location.href : "https://zenora36.lovable.app")} />
+      <link rel="alternate" hrefLang="fr" href={url || "https://zenora36.lovable.app"} />
+      <link rel="alternate" hrefLang="en" href={url || "https://zenora36.lovable.app"} />
+      <link rel="alternate" hrefLang="x-default" href="https://zenora36.lovable.app" />
     </Helmet>
   );
 };
