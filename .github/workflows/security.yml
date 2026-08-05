@@ -1,0 +1,200 @@
+name: Security
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+  push:
+    branches:
+      - main
+      - develop
+  schedule:
+    - cron: "22 3 * * 1"
+  workflow_dispatch:
+    inputs:
+      zap_target_url:
+        description: "Optional URL for manual ZAP baseline scan"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22"
+
+jobs:
+  trivy-fs:
+    name: Trivy filesystem + config
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Trivy filesystem scan (gate)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: sarif
+          output: trivy-fs.sarif
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+          ignore-unfixed: true
+
+      - name: Upload Trivy filesystem SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-fs.sarif
+          category: trivy-fs
+
+      - name: Trivy config / IaC scan (gate)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: config
+          scan-ref: .
+          format: sarif
+          output: trivy-config.sarif
+          severity: HIGH,CRITICAL
+          exit-code: "1"
+
+      - name: Upload Trivy config SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-config.sarif
+          category: trivy-config
+
+      - name: Production dependency audit (advisory)
+        continue-on-error: true
+        run: |
+          set +e
+          npm audit --omit=dev --json > npm-audit.json
+          STATUS=$?
+          set -e
+          {
+            echo "## npm audit (production deps)"
+            echo ""
+            echo "Exit code: $STATUS"
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 0
+
+      - name: Upload npm audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: npm-audit-report
+          path: npm-audit.json
+          if-no-files-found: ignore
+          retention-days: 30
+
+  codeql:
+    name: CodeQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v3
+
+      - name: Analyze
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
+
+  zap-baseline:
+    name: ZAP baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve target
+        id: target
+        run: |
+          TARGET="${{ inputs.zap_target_url }}"
+          if [ -z "$TARGET" ]; then
+            TARGET="https://zenora360.com"
+          fi
+          echo "target=$TARGET" >> "$GITHUB_OUTPUT"
+
+      - name: Run baseline scan
+        run: |
+          docker run --rm \
+            -v "$PWD:/zap/wrk/:rw" \
+            -t ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py \
+            -t "${{ steps.target.outputs.target }}" \
+            -c .github/zap-rules.tsv \
+            -r zap-baseline.html \
+            -J zap-baseline.json \
+            -x zap-baseline.xml \
+            -m 5 \
+            -I
+
+      - name: Upload ZAP report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-baseline-report
+          path: |
+            zap-baseline.html
+            zap-baseline.json
+            zap-baseline.xml
+          retention-days: 30
+
+  security-summary:
+    name: Security summary
+    if: always()
+    needs:
+      - trivy-fs
+      - codeql
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Write summary
+        run: |
+          {
+            echo "## Security gate"
+            echo ""
+            echo "| Job | Result |"
+            echo "| --- | ------ |"
+            echo "| trivy-fs | ${{ needs.trivy-fs.result }} |"
+            echo "| codeql | ${{ needs.codeql.result }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "${{ needs.trivy-fs.result }}" != "success" ] || [ "${{ needs.codeql.result }}" != "success" ]; then
+            exit 1
+          fi

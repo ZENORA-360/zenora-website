@@ -64,10 +64,10 @@ export const SEO = ({
     },
   };
 
+  // Pages can add page-specific schemas (FAQPage, Article, ...) without losing
+  // the baseline WebPage graph — both get emitted together.
   const structuredData = jsonLd
-    ? Array.isArray(jsonLd)
-      ? jsonLd
-      : [jsonLd]
+    ? [defaultJsonLd, ...(Array.isArray(jsonLd) ? jsonLd : [jsonLd])]
     : [defaultJsonLd];
 
   return (
@@ -101,8 +101,8 @@ export const SEO = ({
 
       {/* Twitter */}
       <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:site" content="@zenora_officiel" />
-      <meta name="twitter:creator" content="@zenora_officiel" />
+      <meta name="twitter:site" content="@zenoraofficiel" />
+      <meta name="twitter:creator" content="@zenoraofficiel" />
       <meta name="twitter:title" content={finalTitle} />
       <meta name="twitter:description" content={finalDescription} />
       <meta name="twitter:image" content={ogImage} />

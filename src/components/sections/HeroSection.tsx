@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useRef, lazy, Suspense } from "react";
+import { heroStats } from "@/data/hero";
 
 const NetworkScene = lazy(() =>
   import("@/components/three/NetworkScene").then((m) => ({ default: m.NetworkScene }))
@@ -126,23 +127,17 @@ export const HeroSection = () => {
             transition={{ duration: 0.8, delay: 0.7, ease: [0.16, 1, 0.3, 1] }}
             className="grid grid-cols-3 items-start gap-6 md:gap-16 pt-4 mt-6 border-t border-border/40 w-full max-w-2xl"
           >
-            {[
-              { value: "10+", label: t("hero.stat.projects") || "Projets livrés" },
-              { value: "6", label: t("hero.stat.sectors") || "Secteurs couverts" },
-              { value: "3", label: t("hero.stat.countries") || "Pays d'intervention" },
-            ].map((s) => (
-              <div key={s.label} className="text-center">
+            {heroStats.map((s) => (
+              <div key={s.labelKey} className="text-center">
                 <div className="font-display text-3xl md:text-4xl font-bold text-foreground">{s.value}</div>
-                <div className="mt-1.5 text-[10px] md:text-xs text-muted-foreground tracking-[0.15em] uppercase">{s.label}</div>
+                <div className="mt-1.5 text-[10px] md:text-xs text-muted-foreground tracking-[0.15em] uppercase">
+                  {t(s.labelKey) || s.labelFallback}
+                </div>
               </div>
             ))}
           </motion.div>
         </div>
       </motion.div>
-
-      {/* Bottom gradient fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background via-background/80 to-transparent pointer-events-none" />
-
     </section>
   );
 };

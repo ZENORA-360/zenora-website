@@ -11,15 +11,16 @@ import {
   Building2,
   GraduationCap,
   Layers,
-  Zap,
-  Shield,
   Clock,
 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { SEO } from "@/components/SEO";
+import { PageHero } from "@/components/sections/PageHero";
+import { PageCTA } from "@/components/sections/PageCTA";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { Icon3DGlobe, Icon3DZap, Icon3DShield } from "@/components/icons/Zenora3DIcons";
 
 export default function DeveloppementWeb() {
   const ref = useRef(null);
@@ -61,12 +62,12 @@ export default function DeveloppementWeb() {
 
   const advantages = [
     {
-      icon: Zap,
+      icon: Icon3DZap,
       title: t("webDev.advantage1.title"),
       description: t("webDev.advantage1.desc"),
     },
     {
-      icon: Shield,
+      icon: Icon3DShield,
       title: t("webDev.advantage2.title"),
       description: t("webDev.advantage2.desc"),
     },
@@ -92,62 +93,35 @@ export default function DeveloppementWeb() {
       />
       <Header />
       <main>
-        {/* Hero Section */}
-        <section className="pt-32 pb-20 bg-gradient-to-b from-accent/20 via-muted/10 to-background relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/3" />
-          <div className="absolute top-20 right-10 w-96 h-96 bg-primary/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-72 h-72 bg-primary/3 rounded-full blur-3xl" />
-          
-          <div className="container-zenora relative">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="mb-8"
-            >
-              <Link
-                to="/services"
-                className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                {t("serviceDetail.back")}
-              </Link>
-            </motion.div>
+        <div className="container-zenora pt-8">
+          <Link
+            to="/services"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            {t("serviceDetail.back")}
+          </Link>
+        </div>
 
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="max-w-3xl"
-            >
-              <div className="flex items-center gap-4 mb-6">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.2, type: "spring" }}
-                  className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center"
-                >
-                  <Globe className="w-8 h-8 text-primary" />
-                </motion.div>
-                <span className="px-4 py-2 bg-primary/10 text-primary text-sm font-semibold rounded-full">
-                  {t("webDev.label")}
-                </span>
-              </div>
-              <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
-                {t("webDev.title")} <span className="text-gradient-gold">{t("webDev.titleHighlight")}</span>
-              </h1>
-              <p className="text-lg md:text-xl text-muted-foreground mb-8 leading-relaxed">
-                {t("webDev.description")}
-              </p>
-              <Button variant="hero" asChild>
-                <Link to="/contact">
-                  {t("serviceDetail.quote")}
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
-            </motion.div>
+        <PageHero
+          eyebrow={t("webDev.label")}
+          title={
+            <>
+              {t("webDev.title")} <span className="text-gradient-gold">{t("webDev.titleHighlight")}</span>
+            </>
+          }
+          lead={t("webDev.description")}
+        >
+          <div className="flex items-center gap-4">
+            <Icon3DGlobe className="h-14 w-14" />
+            <Button variant="hero" asChild>
+              <Link to="/contact">
+                {t("serviceDetail.quote")}
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Link>
+            </Button>
           </div>
-        </section>
+        </PageHero>
 
         {/* Services Grid */}
         <section className="section-padding" ref={ref}>
@@ -158,10 +132,10 @@ export default function DeveloppementWeb() {
               transition={{ duration: 0.6 }}
               className="text-center mb-16"
             >
-              <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">
+              <h2 className="section-title mb-4">
                 {t("serviceDetail.solutions").split(" ")[0]} <span className="text-gradient-gold">{t("serviceDetail.solutions").split(" ")[1]}</span>
               </h2>
-              <p className="text-muted-foreground max-w-2xl mx-auto">
+              <p className="section-lead mx-auto max-w-2xl">
                 {t("webDev.solutionsDesc")}
               </p>
             </motion.div>
@@ -173,15 +147,15 @@ export default function DeveloppementWeb() {
                   initial={{ opacity: 0, y: 30 }}
                   animate={isInView ? { opacity: 1, y: 0 } : {}}
                   transition={{ duration: 0.5, delay: index * 0.1 }}
-                  className="p-6 rounded-2xl border border-border bg-card hover:border-primary/40 transition-all duration-300 group"
+                  className="p-6 rounded-lg border border-border bg-card hover:border-primary/40 transition-all duration-300 group"
                 >
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
+                  <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
                     <service.icon className="w-6 h-6 text-primary" />
                   </div>
                   <h3 className="font-display text-xl font-semibold text-foreground mb-2">
                     {service.title}
                   </h3>
-                  <p className="text-muted-foreground text-sm">
+                  <p className="card-copy">
                     {service.description}
                   </p>
                 </motion.div>
@@ -200,7 +174,7 @@ export default function DeveloppementWeb() {
               transition={{ duration: 0.6 }}
               className="text-center mb-16"
             >
-              <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">
+              <h2 className="section-title mb-4">
                 {t("serviceDetail.whyChoose").split(" ").slice(0, 2).join(" ")} <span className="text-gradient-gold">{t("serviceDetail.whyChoose").split(" ").slice(2).join(" ")}</span>
               </h2>
             </motion.div>
@@ -215,13 +189,11 @@ export default function DeveloppementWeb() {
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   className="text-center"
                 >
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                    <advantage.icon className="w-8 h-8 text-primary" />
-                  </div>
+                  <advantage.icon className="h-14 w-14 text-primary mx-auto mb-4" />
                   <h3 className="font-display text-xl font-semibold text-foreground mb-2">
                     {advantage.title}
                   </h3>
-                  <p className="text-muted-foreground">
+                  <p className="section-lead mx-auto">
                     {advantage.description}
                   </p>
                 </motion.div>
@@ -240,7 +212,7 @@ export default function DeveloppementWeb() {
               transition={{ duration: 0.6 }}
               className="text-center mb-16"
             >
-              <h2 className="font-display text-3xl md:text-4xl font-bold mb-4">
+              <h2 className="section-title mb-4">
                 {t("serviceDetail.process").split(" ")[0]} <span className="text-gradient-gold">{t("serviceDetail.process").split(" ")[1]}</span>
               </h2>
             </motion.div>
@@ -268,30 +240,15 @@ export default function DeveloppementWeb() {
           </div>
         </section>
 
-        {/* CTA */}
-        <section className="section-padding bg-secondary text-secondary-foreground">
-          <div className="container-zenora text-center">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.6 }}
-            >
-              <h2 className="font-display text-3xl md:text-4xl font-bold mb-6">
-                {t("webDev.cta.title")} <span className="text-gradient-gold">{t("webDev.cta.titleHighlight")}</span> ?
-              </h2>
-              <p className="text-secondary-foreground/70 max-w-2xl mx-auto mb-8">
-                {t("webDev.cta.description")}
-              </p>
-              <Button variant="hero" asChild>
-                <Link to="/contact">
-                  {t("serviceDetail.contactUs")}
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Link>
-              </Button>
-            </motion.div>
-          </div>
-        </section>
+        <PageCTA
+          title={
+            <>
+              {t("webDev.cta.title")} <span className="text-gradient-gold">{t("webDev.cta.titleHighlight")}</span> ?
+            </>
+          }
+          lead={t("webDev.cta.description")}
+          primaryLabel={t("serviceDetail.contactUs")}
+        />
       </main>
       <Footer />
     </div>

@@ -1,37 +1,48 @@
 # =============================================================================
-# ZENORA - Docker Compose Production Stack
+# ZENORA Web — Compose stack (local build + Harbor / Watchtower ready)
 # =============================================================================
 #
-# Usage:
-#   docker compose up -d          # Start all services
-#   docker compose logs -f web    # Follow web logs
-#   docker compose down           # Stop all services
+# Local (build from source — full multi-stage):
+#   docker compose up -d --build
+#   → http://localhost:${WEB_HOST_PORT:-8080}
 #
-# REQUIRED ENVIRONMENT VARIABLES (create .env file on server):
-#   HARBOR_REGISTRY=harbor.yourserver.com
-#   HARBOR_PROJECT=zenora
-#   DOMAIN=zenora360.com
+# Local (if npm inside Docker fails — build assets on host first):
+#   npm ci && npm run build
+#   DOCKERFILE=Dockerfile.runtime docker compose build web
+#   docker compose up -d web
+#
+# Production server (pull from Harbor, Watchtower refreshes):
+#   Create `.env` from `.env.example` with Harbor vars, then:
+#     docker compose pull web && docker compose up -d
+#   Optional Watchtower:
+#     docker compose --profile watchtower up -d
+#
+# Watchtower only updates containers with com.centurylinklabs.watchtower.enable=true
 # =============================================================================
-
-version: "3.9"
 
 services:
-  # ---------------------------------------------------------------------------
-  # Web Application (Nginx + React SPA)
-  # ---------------------------------------------------------------------------
   web:
-    image: ${HARBOR_REGISTRY:-harbor.local}/${HARBOR_PROJECT:-zenora}/zenora-web:latest
+    # Image name used for Harbor push/pull AND for local `compose build` tags
+    image: ${HARBOR_REGISTRY:-harbor.local}/${HARBOR_PROJECT:-zenora}/zenora-web:${IMAGE_TAG:-latest}
+    build:
+      context: .
+      # Use Dockerfile (full npm build in image) or Dockerfile.runtime (host `dist/`)
+      dockerfile: ${DOCKERFILE:-Dockerfile}
+      args:
+        BUILD_DATE: ${BUILD_DATE:-}
+        VCS_REF: ${VCS_REF:-}
+        VERSION: ${IMAGE_TAG:-latest}
     container_name: zenora-web
     restart: unless-stopped
     ports:
-      - "80:8080"
-      - "443:8080"
+      # Local default 8080; on server set WEB_HOST_PORT=80 (edge TLS terminates elsewhere)
+      - "${WEB_HOST_PORT:-8080}:8080"
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8080/health"]
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 10s
+      start_period: 15s
     deploy:
       resources:
         limits:
@@ -41,25 +52,43 @@ services:
       - no-new-privileges:true
     read_only: true
     tmpfs:
-      - /var/cache/nginx
-      - /var/run
-      - /var/log/nginx
+      - /var/cache/nginx:mode=1777
+      - /var/run:mode=1777
+      - /tmp/nginx:mode=1777
+      - /var/log/nginx:mode=1777
     labels:
       - "com.zenora.service=web"
-      - "com.zenora.version=1.0"
+      - "com.zenora.version=${IMAGE_TAG:-latest}"
+      - "com.centurylinklabs.watchtower.enable=true"
+    networks:
+      - zenora
 
-  # ---------------------------------------------------------------------------
-  # Watchtower - Auto-update containers (optional)
-  # ---------------------------------------------------------------------------
+  # Optional: auto-pull newer Harbor images for zenora-web
   watchtower:
-    image: containrrr/watchtower:latest
+    image: containrrr/watchtower:1.7.1
     container_name: zenora-watchtower
     restart: unless-stopped
+    profiles: ["watchtower"]
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ~/.docker/config.json:/config.json:ro
-    command: --interval 300 --cleanup zenora-web
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ${DOCKER_CONFIG_JSON:-~/.docker/config.json}:/config.json:ro
+    environment:
+      - WATCHTOWER_LABEL_ENABLE=true
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_POLL_INTERVAL=300
+      - DOCKER_API_VERSION=1.44
+    command: zenora-web
     deploy:
       resources:
         limits:
           memory: 64M
+          cpus: "0.1"
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - zenora
+
+networks:
+  zenora:
+    name: zenora-net
+    driver: bridge

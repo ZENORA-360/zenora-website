@@ -94,7 +94,7 @@ const mockPosts: BlogPost[] = [
     categoryEn: 'Case studies',
     tags: ['Corporate', 'Ingénierie', 'SEO', 'Refonte'],
     tagsEn: ['Corporate', 'Engineering', 'SEO', 'Redesign'],
-    publishedAt: '2025-09-12T10:00:00Z',
+    publishedAt: '2026-06-02T10:00:00Z',
     readingTime: 9,
     isPublished: true,
   },
@@ -185,7 +185,7 @@ const mockPosts: BlogPost[] = [
     categoryEn: 'Case studies',
     tags: ['Institutionnel', 'ONG', 'Bilingue', 'Impact'],
     tagsEn: ['Institutional', 'NGO', 'Bilingual', 'Impact'],
-    publishedAt: '2025-08-20T10:00:00Z',
+    publishedAt: '2026-02-24T10:00:00Z',
     readingTime: 8,
     isPublished: true,
   },
@@ -274,7 +274,7 @@ const mockPosts: BlogPost[] = [
     categoryEn: 'Products',
     tags: ['ERP', 'Restauration', 'SaaS', 'Produit'],
     tagsEn: ['ERP', 'Restaurant', 'SaaS', 'Product'],
-    publishedAt: '2025-07-05T10:00:00Z',
+    publishedAt: '2026-03-28T10:00:00Z',
     readingTime: 12,
     isPublished: true,
   },
@@ -379,7 +379,7 @@ const mockPosts: BlogPost[] = [
     categoryEn: 'Products',
     tags: ['Mobile', 'Immobilier', 'App', 'Proptech'],
     tagsEn: ['Mobile', 'Real Estate', 'App', 'Proptech'],
-    publishedAt: '2025-06-18T10:00:00Z',
+    publishedAt: '2026-05-18T10:00:00Z',
     readingTime: 10,
     isPublished: true,
   },
@@ -506,7 +506,7 @@ const mockPosts: BlogPost[] = [
     categoryEn: 'Products',
     tags: ['ERP', 'SaaS', 'Interne', 'Dogfooding'],
     tagsEn: ['ERP', 'SaaS', 'Internal', 'Dogfooding'],
-    publishedAt: '2025-05-02T10:00:00Z',
+    publishedAt: '2026-01-30T10:00:00Z',
     readingTime: 11,
     isPublished: true,
   },
@@ -637,7 +637,7 @@ const mockPosts: BlogPost[] = [
     categoryEn: 'Method',
     tags: ['Méthode', 'Gestion de projet', 'Livraison', 'Qualité'],
     tagsEn: ['Method', 'Project management', 'Delivery', 'Quality'],
-    publishedAt: '2025-04-15T10:00:00Z',
+    publishedAt: '2025-12-18T10:00:00Z',
     readingTime: 10,
     isPublished: true,
   },
@@ -664,8 +664,12 @@ mockPosts.forEach((p, i) => {
 const simulateDelay = (ms: number = 800) =>
   new Promise(resolve => setTimeout(resolve, ms));
 
+type NetworkInformationLike = {
+  effectiveType?: string;
+};
+
 const checkConnectionSpeed = (): ConnectionStatus => {
-  const connection = (navigator as any).connection;
+  const connection = (navigator as Navigator & { connection?: NetworkInformationLike }).connection;
   if (!navigator.onLine) return 'offline';
   if (connection) {
     if (connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g') {
@@ -745,8 +749,9 @@ export const useBlog = () => {
       });
       const { data, total, page, totalPages: tp } = response.data;
       setPosts(data, total, page, tp);
-    } catch (err: any) {
-      if (err.name === 'CanceledError') return;
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'CanceledError') return;
+      if (typeof err === 'object' && err !== null && 'name' in err && (err as { name?: string }).name === 'CanceledError') return;
       console.log('API unavailable, using mock data');
       await simulateDelay(400);
 
@@ -774,6 +779,9 @@ export const useBlog = () => {
         );
       }
       filtered = filtered.filter(p => p.isPublished);
+      filtered.sort(
+        (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime(),
+      );
 
       const pg = requestFilters?.page || 1;
       const lm = requestFilters?.limit || limit;

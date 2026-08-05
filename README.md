@@ -10,132 +10,237 @@ Site vitrine officiel de **ZENORA**, studio technologique basé à Yaoundé (Cam
 ## Stack
 
 | Couche | Technologie |
-|--------|-------------|
+| ------ | ----------- |
 | Build | Vite 5, TypeScript, SWC |
 | UI | React 18, Tailwind CSS, shadcn/ui |
 | Routing | React Router v6 |
 | État | Zustand (blog), React Query |
-| Animations | Framer Motion, Three.js (hero 3D) |
+| Animations | Framer Motion |
 | i18n | Context FR/EN custom |
-| Déploiement | Docker (Bun build → Nginx) |
+| Packaging | Docker multi-stage Node → Nginx |
+| Delivery | GitHub Actions, Harbor, Docker Compose |
 
 ---
 
 ## Prérequis
 
-- Node.js 20+ (ou [Bun](https://bun.sh) pour le build Docker/CI)
-- npm ou bun
+- Node.js 22 (`.nvmrc`)
+- npm
+- Docker / Docker Compose pour les tests d'image
+
+Je garde `npm` comme chemin de vérité pour le build local, la CI et l'image Docker.
 
 ---
 
 ## Développement local
 
 ```sh
-# Cloner le dépôt
 git clone <repo-url>
 cd zenora360
-
-# Installer les dépendances
-npm install
-
-# Lancer le serveur de dev (port 8080)
+npm ci
 npm run dev
 ```
 
-Ouvrir [http://localhost:8080](http://localhost:8080).
+Application locale : [http://localhost:8080](http://localhost:8080)
 
 ### Scripts disponibles
 
 | Commande | Description |
-|----------|-------------|
-| `npm run dev` | Serveur de développement Vite |
-| `npm run build` | Build production (`dist/`) |
-| `npm run preview` | Prévisualiser le build |
+| -------- | ----------- |
+| `npm run dev` | Serveur Vite |
 | `npm run lint` | ESLint |
+| `npm run typecheck` | Vérification TypeScript |
 | `npm run test` | Tests Vitest |
+| `npm run build` | Build production |
+| `npm run ci:validate` | Gate locale complète (lint + typecheck + test + build) |
+| `npm run audit:prod` | Audit des dépendances runtime |
+
+### Makefile
+
+J'ai ajouté un `Makefile` pour éviter les commandes longues et rendre la base réutilisable :
+
+```sh
+make install
+make validate
+make docker-build
+make compose-up
+```
 
 ---
 
 ## Structure du projet
 
-```
+```text
 zenora360/
-├── public/                 # Assets statiques (favicon, OG, sitemap, images)
-│   ├── images/
-│   │   ├── projects/     # Captures projets portfolio
-│   │   └── partners/     # Logos partenaires
-│   ├── llms.txt          # Fichier pour crawlers IA
-│   ├── robots.txt
-│   └── sitemap.xml
+├── .github/
+│   ├── dependabot.yml
+│   ├── workflows/
+│   │   ├── ci.yml
+│   │   ├── security.yml
+│   │   ├── release.yml
+│   │   └── deploy.yml
+│   └── zap-rules.tsv
+├── deploy/
+│   └── .env.production.example
+├── docs/
+│   └── devsecops-pipeline.md
+├── public/
 ├── src/
-│   ├── components/       # UI, sections, layout
-│   ├── contexts/         # i18n (LanguageContext)
-│   ├── hooks/            # useBlog, etc.
-│   ├── lib/              # site.ts (URLs, images), axios, utils
-│   ├── pages/            # Routes marketing + admin
-│   └── stores/           # Zustand (blog)
-├── Dockerfile            # Build Bun → Nginx
-├── docker-compose.yml    # Stack production
-└── index.html            # SEO statique + JSON-LD
+├── Dockerfile
+├── Dockerfile.runtime
+├── docker-compose.yml
+├── Makefile
+└── README.md
 ```
 
 ---
 
-## Configuration site
+## Application
 
-Les constantes globales (domaine, chemins d'images) sont centralisées dans :
+### Configuration site
 
-```ts
-// src/lib/site.ts
-export const SITE_URL = "https://zenora360.com";
-```
+Les constantes globales (domaine, chemins d'images) sont centralisées dans `src/lib/site.ts`.
 
-Le composant `SEO` (`src/components/SEO.tsx`) gère les meta dynamiques par page (Open Graph, Twitter, canonical, JSON-LD).
+Le composant `SEO` (`src/components/SEO.tsx`) gère :
 
----
+- title / description
+- Open Graph
+- Twitter cards
+- canonical
+- JSON-LD par page
 
-## Assets & images
+### Assets
 
 - **Logos** : `src/assets/logo-zenora-*.png`
 - **Illustrations** : `src/assets/photos/*.svg`
-- **Projets & partenaires** : `public/images/projects/`, `public/images/partners/` (servis à `/images/...`)
+- **Projets & partenaires** : `public/images/projects/`, `public/images/partners/`
 
-Ne pas référencer d'URLs externes pour les assets — tout est local ou sous `zenora360.com`.
+Je garde les assets en local ; je n'introduis pas de dépendance externe inutile pour le rendu public.
+
+### Blog API
+
+Le frontend consomme `https://api.zenora360.com` pour le blog et l'admin.  
+En cas d'indisponibilité, un fallback local (mock + stockage navigateur) prend le relais.
+
+---
+
+## Docker
+
+### Build standard
+
+```sh
+docker build -t zenora-web:local .
+docker run --rm -p 8080:8080 zenora-web:local
+```
+
+### Fallback runtime-only
+
+Si un environnement ne permet pas de builder dans Docker :
+
+```sh
+npm ci
+npm run build
+docker build -f Dockerfile.runtime -t zenora-web:local .
+```
+
+### Compose local
+
+```sh
+docker compose up -d --build
+```
+
+Ou avec runtime-only :
+
+```sh
+DOCKERFILE=Dockerfile.runtime docker compose up -d --build
+```
+
+---
+
+## Pipeline DevSecOps
+
+J'ai refondu puis **durci** la pipeline pour en faire une base réutilisable, fail-closed côté supply chain.
+
+### Workflows
+
+| Workflow | Rôle |
+| -------- | ---- |
+| `ci.yml` | qualité, secrets, dependency review, Hadolint |
+| `security.yml` | Trivy gate, CodeQL, ZAP planifié |
+| `release.yml` | build → scan → push → Cosign → SBOM → provenance |
+| `deploy.yml` | verify signature → SSH deploy → smoke / rollback |
+| `reusable-*.yml` | briques réutilisables multi-projets |
+
+### Principes
+
+- la CI valide le code avant merge
+- le release **ne pousse jamais** une image avant le scan Trivy
+- le déploiement consomme un tag immuable (`sha-*`) et **refuse `latest`**
+- Cosign est vérifié **avant** le SSH deploy
+- healthcheck + rollback + smoke public
+
+Documentation détaillée : `docs/devsecops-pipeline.md`
+
+---
+
+## Déploiement production
+
+Le serveur doit disposer au minimum de :
+
+- Docker
+- Docker Compose
+- accès réseau au registre Harbor
+- un répertoire applicatif cible (`DEPLOY_APP_DIR`)
+
+Le workflow `deploy.yml` :
+
+1. copie `docker-compose.yml`
+2. génère `.env` côté serveur
+3. fait `docker compose pull web`
+4. recrée le service
+5. vérifie `/health`
+6. rollback si nécessaire
+
+Variables runtime serveur : voir `deploy/.env.production.example`
+
+---
+
+## Secrets GitHub à prévoir
+
+### Harbor
+
+- `HARBOR_REGISTRY`
+- `HARBOR_PROJECT`
+- `HARBOR_USERNAME`
+- `HARBOR_PASSWORD`
+
+### Déploiement SSH
+
+- `DEPLOY_SSH_HOST`
+- `DEPLOY_SSH_USER`
+- `DEPLOY_SSH_KEY`
+- `DEPLOY_SSH_PORT`
+- `DEPLOY_APP_DIR`
+
+### Optionnel
+
+- `SONAR_HOST_URL`
+- `SONAR_TOKEN`
+
+Je recommande aussi de définir des variables d'environnement GitHub côté `production` :
+
+- `WEB_HOST_PORT`
+- `PUBLIC_BASE_HOST`
 
 ---
 
 ## SEO & IA
 
-- **Canonical** : `https://zenora360.com` (voir `src/lib/site.ts`)
+- **Canonical** : `https://zenora360.com`
 - **Sitemap** : `/sitemap.xml`
-- **Robots** : `/robots.txt` (admin exclu, crawlers IA autorisés sur le contenu public)
-- **LLMs** : `/llms.txt` — résumé structuré pour assistants IA (ChatGPT, Perplexity, etc.)
-- **JSON-LD** : Organization, WebSite, ProfessionalService dans `index.html` ; WebPage par route via `SEO`
-
----
-
-## Déploiement
-
-### Docker
-
-```sh
-docker build -t zenora-web .
-docker run -p 8080:8080 zenora-web
-```
-
-### Production (OVH)
-
-Le déploiement passe par la pipeline CI/CD (`.github/workflows/ci-cd.yml`) :
-build → Harbor registry → `docker compose up` sur le serveur.
-
-Variables d'environnement serveur : voir `docker-compose.yml`.
-
----
-
-## API blog
-
-Le frontend consomme `https://api.zenora360.com` pour le blog et l'admin.  
-En cas d'indisponibilité, un fallback local (mock + localStorage) prend le relais.
+- **Robots** : `/robots.txt`
+- **LLMs** : `/llms.txt`
+- **JSON-LD** : `index.html` + `src/components/SEO.tsx`
 
 ---
 

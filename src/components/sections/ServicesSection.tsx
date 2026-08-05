@@ -1,81 +1,30 @@
 import { motion } from "framer-motion";
 import { useInView } from "framer-motion";
-import { useRef, useState } from "react";
-import {
-  Globe,
-  Megaphone,
-  Palette,
-  Settings,
-  Monitor,
-  ShoppingCart,
-  GraduationCap,
-  Building2,
-  Mail,
-  Search,
-  Video,
-  FileText,
-  Cog,
-  Layers,
-} from "lucide-react";
+import { useMemo, useRef, useState } from "react";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { servicesCatalog } from "@/data/services";
 
 export const ServicesSection = () => {
   const ref = useRef(null);
   const isInView = useInView(ref, { once: true, margin: "-100px" });
   const { t } = useLanguage();
 
-  const services = [
-    {
-      id: "web",
-      icon: Globe,
-      title: t("services.webDev.title"),
-      description: t("services.webDev.description"),
-      items: [
-        { icon: Monitor, label: t("services.webDev.feature1") },
-        { icon: Layers, label: t("services.webDev.feature2") },
-        { icon: ShoppingCart, label: t("services.webDev.feature3") },
-        { icon: Building2, label: t("services.webDev.feature4") },
-      ],
-    },
-    {
-      id: "marketing",
-      icon: Megaphone,
-      title: t("services.marketing.title"),
-      description: t("services.marketing.description"),
-      items: [
-        { icon: Megaphone, label: t("services.marketing.feature1") },
-        { icon: Mail, label: t("services.marketing.feature2") },
-        { icon: Search, label: t("services.marketing.feature3") },
-        { icon: Globe, label: t("services.marketing.feature4") },
-      ],
-    },
-    {
-      id: "design",
-      icon: Palette,
-      title: t("services.design.title"),
-      description: t("services.design.description"),
-      items: [
-        { icon: Palette, label: t("services.design.feature1") },
-        { icon: Video, label: t("services.design.feature2") },
-        { icon: FileText, label: t("services.design.feature3") },
-        { icon: Video, label: t("services.design.feature4") },
-      ],
-    },
-    {
-      id: "expertise",
-      icon: Settings,
-      title: t("services.solutions.title"),
-      description: t("services.solutions.description"),
-      items: [
-        { icon: Cog, label: t("services.solutions.feature1") },
-        { icon: Settings, label: t("services.solutions.feature2") },
-        { icon: Building2, label: t("services.solutions.feature3") },
-        { icon: GraduationCap, label: t("services.solutions.feature4") },
-      ],
-    },
-  ];
+  const services = useMemo(
+    () =>
+      servicesCatalog.map((service) => ({
+        id: service.id,
+        icon: service.icon,
+        title: t(service.titleKey),
+        description: t(service.descriptionKey),
+        items: service.items.map((item) => ({
+          icon: item.icon,
+          label: t(item.labelKey),
+        })),
+      })),
+    [t],
+  );
 
-  const [activeService, setActiveService] = useState(services[0].id);
+  const [activeService, setActiveService] = useState(servicesCatalog[0].id);
   const currentService = services.find((s) => s.id === activeService)!;
 
   return (
@@ -120,7 +69,7 @@ export const ServicesSection = () => {
                   : "bg-secondary-foreground/10 text-secondary-foreground hover:bg-secondary-foreground/20"
               }`}
             >
-              <service.icon className="w-5 h-5" />
+              <service.icon className="h-7 w-7" />
               <span className="hidden sm:inline">{service.title.split("&")[0].trim()}</span>
             </button>
           ))}
@@ -131,12 +80,12 @@ export const ServicesSection = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="bg-card text-card-foreground rounded-2xl overflow-hidden shadow-elegant border border-primary/20"
+          className="bg-card text-card-foreground rounded-lg overflow-hidden shadow-elegant border border-primary/20"
         >
           <div className="bg-gradient-gold p-6 md:p-8">
             <div className="flex items-center gap-4">
-              <div className="w-14 h-14 rounded-xl bg-primary-foreground/20 flex items-center justify-center">
-                <currentService.icon className="w-7 h-7 text-primary-foreground" />
+              <div className="w-14 h-14 rounded-lg bg-primary-foreground/20 flex items-center justify-center">
+                <currentService.icon className="h-11 w-11" />
               </div>
               <h3 className="font-display text-2xl md:text-3xl font-bold text-primary-foreground">
                 {currentService.title}
@@ -156,7 +105,7 @@ export const ServicesSection = () => {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.05 }}
-                  className="flex items-center gap-3 p-4 rounded-xl border border-border hover:border-primary/30 hover:bg-accent/50 transition-all duration-300"
+                  className="flex items-center gap-3 p-4 rounded-lg border border-border hover:border-primary/30 hover:bg-accent/50 transition-all duration-300"
                 >
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                     <item.icon className="w-5 h-5 text-primary" />

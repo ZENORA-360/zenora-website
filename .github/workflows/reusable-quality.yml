@@ -1,0 +1,77 @@
+# Reusable quality gate — call from CI / Release / other products.
+name: Reusable quality
+
+on:
+  workflow_call:
+    inputs:
+      node_version:
+        description: Node.js version
+        required: false
+        type: string
+        default: "22"
+      upload_dist:
+        description: Upload dist/ as artifact
+        required: false
+        type: boolean
+        default: false
+      run_coverage:
+        description: Collect coverage during tests
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Quality gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node_version }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Unit tests
+        run: |
+          if [ "${{ inputs.run_coverage }}" = "true" ]; then
+            npm run test -- --coverage
+          else
+            npm run test
+          fi
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload coverage
+        if: always() && inputs.run_coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload build output
+        if: inputs.upload_dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-dist
+          path: dist
+          if-no-files-found: error
+          retention-days: 7

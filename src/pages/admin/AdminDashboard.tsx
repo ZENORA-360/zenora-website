@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { FileText, Eye, TrendingUp, Plus, ArrowRight } from "lucide-react";
+import { FileText, Eye, TrendingUp, Plus, ArrowRight, type LucideIcon } from "lucide-react";
 import AdminLayout from "./AdminLayout";
 import { Button } from "@/components/ui/button";
 import { useBlog } from "@/hooks/useBlog";
@@ -15,7 +15,7 @@ const StatCard = ({
   trend, 
   color 
 }: { 
-  icon: any; 
+  icon: LucideIcon;
   label: string; 
   value: number | string; 
   trend?: string;
@@ -24,10 +24,10 @@ const StatCard = ({
   <motion.div
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
-    className="p-6 rounded-2xl bg-card border border-border hover:border-primary/30 transition-all"
+    className="p-6 rounded-lg bg-card border border-border hover:border-primary/30 transition-all"
   >
     <div className="flex items-start justify-between mb-4">
-      <div className={`w-12 h-12 rounded-xl ${color} flex items-center justify-center`}>
+      <div className={`w-12 h-12 rounded-lg ${color} flex items-center justify-center`}>
         <Icon className="w-6 h-6 text-primary-foreground" />
       </div>
       {trend && (
@@ -57,7 +57,7 @@ export default function AdminDashboard() {
 
   return (
     <AdminLayout>
-      <SEO title={t("admin.dashboard.title")} />
+      <SEO title={t("admin.dashboard.title")} noindex />
       
       <div className="space-y-8">
         {/* Header */}
@@ -109,7 +109,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Recent Posts */}
-        <div className="rounded-2xl bg-card border border-border overflow-hidden">
+        <div className="rounded-lg bg-card border border-border overflow-hidden">
           <div className="p-6 border-b border-border flex items-center justify-between">
             <h2 className="font-display text-xl font-bold text-foreground">
               {t("admin.dashboard.recentPosts")}

@@ -70,7 +70,7 @@ export default function AdminBlogEditor() {
     }
   }, [id, posts]);
 
-  const handleChange = (field: keyof BlogFormData, value: any) => {
+  const handleChange = <K extends keyof BlogFormData>(field: K, value: BlogFormData[K]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -114,7 +114,7 @@ export default function AdminBlogEditor() {
 
   return (
     <AdminLayout>
-      <SEO title={isEditing ? t("admin.editor.editTitle") : t("admin.editor.newTitle")} />
+      <SEO title={isEditing ? t("admin.editor.editTitle") : t("admin.editor.newTitle")} noindex />
       
       <form onSubmit={handleSubmit} className="space-y-8">
         {/* Header */}
@@ -268,7 +268,7 @@ export default function AdminBlogEditor() {
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="rounded-2xl bg-card border border-border p-6 space-y-4"
+              className="rounded-lg bg-card border border-border p-6 space-y-4"
             >
               <Label>{t("admin.editor.coverImage")}</Label>
               <div className="aspect-video rounded-lg bg-muted overflow-hidden relative group">
@@ -296,7 +296,7 @@ export default function AdminBlogEditor() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="rounded-2xl bg-card border border-border p-6 space-y-4"
+              className="rounded-lg bg-card border border-border p-6 space-y-4"
             >
               <Label htmlFor="category">{t("admin.editor.category")} *</Label>
               <Input
@@ -319,7 +319,7 @@ export default function AdminBlogEditor() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.2 }}
-                className="rounded-2xl bg-card border border-border p-6"
+                className="rounded-lg bg-card border border-border p-6"
               >
                 <h3 className="font-medium text-foreground mb-4 flex items-center gap-2">
                   <Eye className="w-4 h-4" />

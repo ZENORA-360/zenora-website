@@ -1,0 +1,175 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - "feature/**"
+      - "hotfix/**"
+      - "release/**"
+  pull_request:
+    branches:
+      - main
+      - develop
+
+permissions:
+  contents: read
+  pull-requests: read
+  security-events: write
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "22"
+
+jobs:
+  quality:
+    name: Quality
+    uses: ./.github/workflows/reusable-quality.yml
+    with:
+      node_version: "22"
+      upload_dist: ${{ github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' }}
+      run_coverage: true
+
+  secret-scan:
+    name: Secret scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Dependency review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+
+  dockerfile-lint:
+    name: Dockerfile lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile
+          config: .hadolint.yaml
+          failure-threshold: warning
+
+  sonar:
+    name: SonarQube
+    # secrets.* cannot be used safely in job-level if; gate inside the step instead
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    needs:
+      - quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Skip if Sonar secrets missing
+        id: sonar-ready
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: |
+          if [ -z "$SONAR_TOKEN" ] || [ -z "$SONAR_HOST_URL" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "SonarQube secrets not configured — skipping."
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup Node
+        if: steps.sonar-ready.outputs.enabled == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        if: steps.sonar-ready.outputs.enabled == 'true'
+        run: npm ci
+
+      - name: Test coverage
+        if: steps.sonar-ready.outputs.enabled == 'true'
+        run: npm run test -- --coverage
+
+      - name: SonarQube scan
+        if: steps.sonar-ready.outputs.enabled == 'true'
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        with:
+          args: >
+            -Dsonar.projectKey=ZENORA-frontend
+            -Dsonar.sources=src
+            -Dsonar.exclusions=**/dist/**,**/coverage/**,**/*.test.*,**/*.spec.*
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.qualitygate.wait=true
+
+  ci-summary:
+    name: CI summary
+    if: always()
+    needs:
+      - quality
+      - secret-scan
+      - dependency-review
+      - dockerfile-lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Write summary
+        run: |
+          {
+            echo "## CI gate"
+            echo ""
+            echo "| Job | Result |"
+            echo "| --- | ------ |"
+            echo "| quality | ${{ needs.quality.result }} |"
+            echo "| secret-scan | ${{ needs.secret-scan.result }} |"
+            echo "| dependency-review | ${{ needs.dependency-review.result }} |"
+            echo "| dockerfile-lint | ${{ needs.dockerfile-lint.result }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          for result in \
+            "${{ needs.quality.result }}" \
+            "${{ needs.secret-scan.result }}" \
+            "${{ needs.dockerfile-lint.result }}"
+          do
+            if [ "$result" != "success" ] && [ "$result" != "skipped" ]; then
+              echo "CI gate failed."
+              exit 1
+            fi
+          done
+
+          # dependency-review is PR-only; treat failure as hard fail when present
+          if [ "${{ needs.dependency-review.result }}" = "failure" ]; then
+            exit 1
+          fi

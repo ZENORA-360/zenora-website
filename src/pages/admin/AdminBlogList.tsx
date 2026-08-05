@@ -84,7 +84,7 @@ export default function AdminBlogList() {
 
   return (
     <AdminLayout>
-      <SEO title={t("admin.blogs.title")} />
+      <SEO title={t("admin.blogs.title")} noindex />
       
       <div className="space-y-6">
         {/* Header */}
@@ -118,7 +118,7 @@ export default function AdminBlogList() {
         </div>
 
         {/* Table */}
-        <div className="rounded-2xl bg-card border border-border overflow-hidden">
+        <div className="rounded-lg bg-card border border-border overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-muted/50">

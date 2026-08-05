@@ -95,7 +95,7 @@ export const Header = () => {
               <div key={link.href} className="relative group">
                 {link.hasDropdown ? (
                   <div
-                    className="flex items-center gap-1.5 text-sm font-medium text-foreground/70 hover:text-primary transition-all duration-300 cursor-pointer"
+                    className="flex items-center gap-1 text-sm font-medium text-foreground/70 hover:text-primary transition-all duration-300 cursor-pointer"
                     onMouseEnter={() => setIsServicesOpen(true)}
                     onMouseLeave={() => setIsServicesOpen(false)}
                   >
@@ -111,7 +111,7 @@ export const Header = () => {
                           transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
                           className="absolute top-full left-0 pt-4"
                         >
-                          <div className="bg-card/95 backdrop-blur-xl rounded-xl border border-border shadow-elegant p-2 min-w-[240px]">
+                          <div className="bg-card/85 backdrop-blur-xl rounded-sm border border-border shadow-elegant p-2 min-w-[200px]">
                             {servicesSubLinks.map((subLink, index) => (
                               <motion.div
                                 key={subLink.href}
@@ -121,7 +121,7 @@ export const Header = () => {
                               >
                                 <Link
                                   to={subLink.href}
-                                  className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm transition-all duration-300 ${
+                                  className={`flex items-center gap-2 px-2 py-2 rounded-sm text-sm transition-all duration-300 ${
                                     isActive(subLink.href)
                                       ? "text-primary bg-accent"
                                       : "text-foreground/80 hover:text-primary hover:bg-accent"
@@ -155,13 +155,13 @@ export const Header = () => {
           </nav>
 
           {/* Right side */}
-          <div className="hidden lg:flex items-center gap-3">
+          <div className="hidden lg:flex items-center gap-1.5">
             <LanguageToggle />
             <ThemeToggle />
             <Button 
-              variant="goldOutline" 
+              variant="heroOutline" 
               size="sm"
-              className="ml-2 border-primary/50 hover:border-primary hover:shadow-[0_0_20px_hsla(42,70%,50%,0.3)] transition-all duration-500"
+              className="border-2 transition-all duration-500"
               asChild
             >
               <Link to="/contact">{t("hero.cta.start")}</Link>
@@ -173,7 +173,7 @@ export const Header = () => {
             <LanguageToggle />
             <ThemeToggle />
             <button
-              className="p-2 text-foreground hover:text-primary transition-colors"
+              className="text-foreground hover:text-primary transition-colors"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               aria-label="Toggle menu"
             >

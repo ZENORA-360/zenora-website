@@ -34,11 +34,11 @@ export const MissionVisionSection = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="group"
           >
-            <div className="h-full bg-card rounded-2xl overflow-hidden border border-border hover:border-primary/30 transition-all duration-500 shadow-elegant hover:shadow-gold">
+            <div className="h-full bg-card rounded-lg overflow-hidden border border-border hover:border-primary/30 transition-all duration-500 shadow-elegant hover:shadow-gold">
               {/* Header */}
               <div className="bg-gradient-gold p-8">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-xl bg-primary-foreground/20 flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-lg bg-primary-foreground/20 flex items-center justify-center">
                     <Target className="w-8 h-8 text-primary-foreground" />
                   </div>
                   <h3 className="font-display text-3xl font-bold text-primary-foreground">
@@ -82,11 +82,11 @@ export const MissionVisionSection = () => {
             transition={{ duration: 0.6, delay: 0.4 }}
             className="group"
           >
-            <div className="h-full bg-secondary text-secondary-foreground rounded-2xl overflow-hidden border border-border hover:border-primary/30 transition-all duration-500 shadow-elegant hover:shadow-gold">
+            <div className="h-full bg-secondary text-secondary-foreground rounded-lg overflow-hidden border border-border hover:border-primary/30 transition-all duration-500 shadow-elegant hover:shadow-gold">
               {/* Header */}
               <div className="bg-gradient-to-r from-secondary to-foreground/90 p-8">
                 <div className="flex items-center gap-4">
-                  <div className="w-16 h-16 rounded-xl bg-primary/20 flex items-center justify-center">
+                  <div className="w-16 h-16 rounded-lg bg-primary/20 flex items-center justify-center">
                     <Eye className="w-8 h-8 text-primary" />
                   </div>
                   <h3 className="font-display text-3xl font-bold text-secondary-foreground">

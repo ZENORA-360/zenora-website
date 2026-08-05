@@ -1,52 +1,8 @@
 import { motion } from "framer-motion";
 import { useInView } from "framer-motion";
 import { useRef } from "react";
-import {
-  Search,
-  Lightbulb,
-  Code,
-  Rocket,
-  HeartHandshake,
-} from "lucide-react";
 import marbleBg from "@/assets/marble-bg.jpg";
-
-const steps = [
-  {
-    number: "01",
-    icon: Search,
-    title: "Analyse et Compréhension",
-    description:
-      "Nous étudions vos besoins, votre secteur et vos objectifs pour une compréhension approfondie de votre projet.",
-  },
-  {
-    number: "02",
-    icon: Lightbulb,
-    title: "Proposition de Solution Adaptée",
-    description:
-      "Nous élaborons une stratégie sur mesure et des solutions technologiques adaptées à votre réalité.",
-  },
-  {
-    number: "03",
-    icon: Code,
-    title: "Conception et Développement",
-    description:
-      "Notre équipe conçoit et développe votre solution avec rigueur, en respectant les standards de qualité.",
-  },
-  {
-    number: "04",
-    icon: Rocket,
-    title: "Validation et Déploiement",
-    description:
-      "Tests approfondis, validation client et mise en production de votre solution dans les meilleures conditions.",
-  },
-  {
-    number: "05",
-    icon: HeartHandshake,
-    title: "Suivi, Support et Amélioration Continue",
-    description:
-      "Accompagnement post-lancement, maintenance et optimisations continues pour garantir la pérennité.",
-  },
-];
+import { methodSteps, methodTrustPoints } from "@/data/method";
 
 export const MethodSection = () => {
   const ref = useRef(null);
@@ -92,7 +48,7 @@ export const MethodSection = () => {
 
           {/* Steps */}
           <div className="space-y-12">
-            {steps.map((step, index) => (
+            {methodSteps.map((step, index) => (
               <motion.div
                 key={step.number}
                 initial={{ opacity: 0, y: 30 }}
@@ -108,7 +64,7 @@ export const MethodSection = () => {
                     index % 2 === 0 ? "md:pr-12 md:text-right" : "md:pl-12"
                   }`}
                 >
-                  <div className="bg-card p-6 md:p-8 rounded-xl shadow-elegant border border-border hover:border-primary/30 transition-all duration-300 group">
+                  <div className="bg-card p-6 md:p-8 rounded-lg shadow-elegant border border-border hover:border-primary/30 transition-all duration-300 group">
                     <div
                       className={`flex items-center gap-4 mb-4 ${
                         index % 2 === 0 ? "md:flex-row-reverse" : ""
@@ -129,8 +85,8 @@ export const MethodSection = () => {
 
                 {/* Center icon */}
                 <div className="absolute left-0 md:left-1/2 transform md:-translate-x-1/2 z-10">
-                  <div className="w-16 h-16 rounded-full bg-gradient-gold-shine flex items-center justify-center shadow-gold">
-                    <step.icon className="w-7 h-7 text-primary-foreground" />
+                  <div className="w-16 h-16 rounded-full bg-card border border-border flex items-center justify-center shadow-elegant">
+                    <step.icon className="h-11 w-11" />
                   </div>
                 </div>
 
@@ -148,17 +104,12 @@ export const MethodSection = () => {
           transition={{ duration: 0.6, delay: 0.8 }}
           className="mt-20 text-center"
         >
-          <div className="bg-gradient-gold rounded-2xl p-8 md:p-12 shadow-elegant">
+          <div className="bg-gradient-gold rounded-lg p-8 md:p-12 shadow-elegant">
             <h3 className="font-display text-2xl md:text-3xl font-bold text-primary-foreground mb-6">
               Pourquoi nous faire confiance ?
             </h3>
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[
-                "Approche orientée résultats",
-                "Transparence et communication",
-                "Solutions claires et évolutives",
-                "Accompagnement personnalisé",
-              ].map((item, index) => (
+              {methodTrustPoints.map((item, index) => (
                 <div
                   key={index}
                   className="bg-primary-foreground/10 backdrop-blur-sm rounded-lg p-4"

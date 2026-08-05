@@ -1,22 +1,9 @@
 import { motion } from "framer-motion";
 import { useInView } from "framer-motion";
 import { useRef } from "react";
-import { Check, Eye, Lightbulb, Target, Users } from "lucide-react";
+import { Check } from "lucide-react";
 import ABOUT_IMAGE from "@/assets/photos/about-team.svg";
-
-const benefits = [
-  "Renforcer votre visibilité digitale",
-  "Valoriser votre image de marque",
-  "Structurer vos processus numériques",
-  "Préparer la croissance de votre activité",
-];
-
-const values = [
-  { icon: Target, title: "Résultats", description: "Approche orientée performance" },
-  { icon: Users, title: "Transparence", description: "Communication claire et continue" },
-  { icon: Lightbulb, title: "Innovation", description: "Solutions évolutives et modernes" },
-  { icon: Eye, title: "Accompagnement", description: "Support personnalisé" },
-];
+import { aboutBenefits, aboutValues } from "@/data/about";
 
 export const AboutSection = () => {
   const ref = useRef(null);
@@ -51,8 +38,8 @@ export const AboutSection = () => {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="relative"
           >
-            <div className="relative rounded-xl overflow-hidden shadow-elegant">
-              <div className="absolute inset-0 border-2 border-primary/30 rounded-xl z-10 pointer-events-none" />
+            <div className="relative rounded-lg overflow-hidden shadow-elegant">
+              <div className="absolute inset-0 border-2 border-primary/30 rounded-lg z-10 pointer-events-none" />
               <img
                 src={ABOUT_IMAGE}
                 alt="Équipe ZENORA au travail"
@@ -99,7 +86,7 @@ export const AboutSection = () => {
                 Ce que ZENORA vous permet de faire
               </h3>
               <ul className="space-y-3">
-                {benefits.map((benefit, index) => (
+                {aboutBenefits.map((benefit, index) => (
                   <motion.li
                     key={index}
                     initial={{ opacity: 0, x: 20 }}
@@ -125,13 +112,13 @@ export const AboutSection = () => {
           transition={{ duration: 0.6, delay: 0.8 }}
           className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-6"
         >
-          {values.map((value, index) => (
+          {aboutValues.map((value) => (
             <div
               key={value.title}
-              className="text-center p-6 rounded-xl bg-card border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-gold"
+              className="text-center p-6 rounded-lg bg-card border border-border hover:border-primary/30 transition-all duration-300 hover:shadow-gold"
             >
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-primary/10 mb-4">
-                <value.icon className="w-6 h-6 text-primary" />
+              <div className="inline-flex items-center justify-center w-14 h-14 mb-4">
+                <value.icon className="h-12 w-12" />
               </div>
               <h4 className="font-display text-lg font-semibold text-foreground mb-2">
                 {value.title}

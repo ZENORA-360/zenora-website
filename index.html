@@ -5,6 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
 
+    <!-- Applies the persisted theme before first paint to avoid a light-mode flash (site defaults to dark). -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem("theme");
+          document.documentElement.classList.toggle("dark", stored ? stored === "dark" : true);
+        } catch (e) {
+          document.documentElement.classList.add("dark");
+        }
+      })();
+    </script>
+
     <!-- Primary SEO -->
     <title>ZENORA | Solutions Digitales - De Zéro au Zénith</title>
     <meta name="description" content="ZENORA, studio technologique à Yaoundé : développement web, marketing digital, design graphique et ERP métiers pour entreprises et institutions en Afrique. Transformation digitale avec un standard international." />
@@ -47,8 +59,8 @@
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:site" content="@zenora_officiel" />
-    <meta name="twitter:creator" content="@zenora_officiel" />
+    <meta name="twitter:site" content="@zenoraofficiel" />
+    <meta name="twitter:creator" content="@zenoraofficiel" />
     <meta name="twitter:title" content="ZENORA | Solutions Digitales Premium" />
     <meta name="twitter:description" content="Transformation digitale en Afrique. Développement web, marketing, design et solutions métiers." />
     <meta name="twitter:image" content="https://zenora360.com/og-image.svg" />
@@ -147,6 +159,14 @@
       }
     }
     </script>
+
+<!-- Privacy-friendly analytics by Plausible -->
+<script async src="https://analytics.zenora360.com/js/pa-Tfp8L41ogQEReuWn9XBwC.js"></script>
+<script>
+  window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+  plausible.init()
+</script>
+
   </head>
 
   <body>

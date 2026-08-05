@@ -1,39 +1,13 @@
 import { Moon, Sun } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useTheme } from "next-themes";
 
 export const ThemeToggle = () => {
-  const [isDark, setIsDark] = useState(() => {
-    if (typeof window !== "undefined") {
-      return document.documentElement.classList.contains("dark");
-    }
-    return false;
-  });
-
-  useEffect(() => {
-    const root = document.documentElement;
-    if (isDark) {
-      root.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      root.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
-  }, [isDark]);
-
-  useEffect(() => {
-    const savedTheme = localStorage.getItem("theme");
-    if (savedTheme === "dark") {
-      setIsDark(true);
-    } else if (savedTheme === "light") {
-      setIsDark(false);
-    } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      setIsDark(true);
-    }
-  }, []);
+  const { theme, setTheme } = useTheme();
+  const isDark = theme !== "light";
 
   return (
     <button
-      onClick={() => setIsDark(!isDark)}
+      onClick={() => setTheme(isDark ? "light" : "dark")}
       className="p-2 rounded-full bg-muted hover:bg-accent transition-colors duration-200"
       aria-label={isDark ? "Activer le mode clair" : "Activer le mode sombre"}
     >

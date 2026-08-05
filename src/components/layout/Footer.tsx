@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
-import { ArrowUp, Mail, Phone, MapPin, Globe, Instagram, Linkedin, Facebook, UtensilsCrossed, Building2 } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { FooterParticles } from "@/components/FooterParticles";
+import { contactSocialLinks, footerContactLinks } from "@/data/contact";
 import logoZenora from "@/assets/logo-zenora-full.png";
 
 export const Footer = () => {
@@ -31,30 +32,15 @@ export const Footer = () => {
 
   const solutions = [
     {
-      icon: UtensilsCrossed,
       name: "NEXUS",
       desc: language === "fr" ? "ERP restauration" : "Restaurant ERP",
       href: "/projects",
     },
     {
-      icon: Building2,
       name: "KAZA",
       desc: language === "fr" ? "Gestion immobilière" : "Real estate app",
       href: "/projects",
     },
-  ];
-
-  const contactInfo = [
-    { icon: Mail, label: "contact@zenora360.com", href: "mailto:contact@zenora360.com" },
-    { icon: Phone, label: "+237 655 958 641", href: "tel:+237655958641" },
-    { icon: MapPin, label: "Melen, Yaoundé - Cameroun", href: "https://maps.google.com/?q=Melen,Yaoundé,Cameroun" },
-  ];
-
-  const socialLinks = [
-    { icon: Facebook, href: "https://www.facebook.com/zenoraofficiel", label: "Facebook" },
-    { icon: Instagram, href: "https://instagram.com/zenora_officiel", label: "Instagram" },
-    { icon: Linkedin, href: "https://linkedin.com/company/zenora", label: "LinkedIn" },
-    { icon: Globe, href: "https://zenora360.com", label: "Website" },
   ];
 
   const scrollToTop = () => {
@@ -68,7 +54,7 @@ export const Footer = () => {
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent" />
 
       {/* Main footer */}
-      <div className="container-zenora py-16 md:py-20 relative z-[2]">
+      <div className="container-zenora py-4 md:py-6 relative z-[2]">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-10 md:gap-12 text-center sm:text-left">
           {/* Brand */}
           <div className="sm:col-span-2 lg:col-span-2 flex flex-col items-center sm:items-start">
@@ -87,7 +73,7 @@ export const Footer = () => {
               {t("footer.description")}
             </p>
             <div className="flex gap-3 justify-center sm:justify-start">
-              {socialLinks.map((social) => (
+              {contactSocialLinks.map((social) => (
                 <a
                   key={social.label}
                   href={social.href}
@@ -148,9 +134,6 @@ export const Footer = () => {
                     to={sol.href}
                     className="flex items-start gap-3 group justify-center sm:justify-start"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-primary/15 group-hover:bg-primary/25 flex items-center justify-center flex-shrink-0 border border-primary/20 transition-colors">
-                      <sol.icon className="w-4 h-4 text-primary" />
-                    </div>
                     <div className="text-left">
                       <div className="text-sm font-semibold text-white/90 group-hover:text-primary transition-colors">
                         {sol.name}
@@ -165,12 +148,12 @@ export const Footer = () => {
         </div>
 
         {/* Contact row */}
-        <div className="mt-12 pt-8 border-t border-white/10">
-          <h4 className="font-display text-sm font-bold text-primary uppercase tracking-wider mb-5 text-center sm:text-left">
+        <div className="mt-6 pt-4 border-t border-white/10">
+          <h4 className="font-display text-sm font-bold text-primary uppercase tracking-wider mb-3 text-center sm:text-left">
             {language === "fr" ? "Contact" : "Connect"}
           </h4>
           <ul className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {contactInfo.map((item, index) => (
+            {footerContactLinks.map((item, index) => (
               <motion.li
                 key={item.label}
                 initial={{ opacity: 0, x: -10 }}
@@ -184,8 +167,8 @@ export const Footer = () => {
                   rel={item.href.startsWith("http") ? "noopener noreferrer" : undefined}
                   className="flex items-center gap-3 group justify-center sm:justify-start"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-primary/15 group-hover:bg-primary/25 flex items-center justify-center flex-shrink-0 transition-colors">
-                    <item.icon className="w-4 h-4 text-primary" />
+                  <div className="w-11 h-11 flex items-center justify-center flex-shrink-0 transition-transform duration-300 group-hover:scale-110">
+                    <item.icon className="w-10 h-10" />
                   </div>
                   <span className="text-white/70 group-hover:text-primary text-sm transition-colors">
                     {item.label}
@@ -199,13 +182,13 @@ export const Footer = () => {
 
       {/* Bottom bar */}
       <div className="border-t border-white/10 relative z-[2]">
-        <div className="container-zenora py-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-5">
-            <p className="text-white/50 text-sm text-center md:text-left">
+        <div className="container-zenora py-2">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="text-white/50 text-xs text-center md:text-left">
               © {new Date().getFullYear()} ZENORA. {t("footer.rights")}
             </p>
 
-            <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm">
+            <nav className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs">
               <Link to="/privacy" className="text-white/55 hover:text-primary transition-colors duration-300">
                 {t("footer.privacy")}
               </Link>
@@ -221,11 +204,10 @@ export const Footer = () => {
 
             <motion.button
               onClick={scrollToTop}
-              className="flex items-center gap-2 text-sm text-white/60 hover:text-primary transition-all duration-300 group"
+              className="absolute bottom-20 right-10 md:right-20 flex items-center gap-2 text-sm text-white/60 hover:text-primary transition-all duration-300 group"
               whileHover={{ y: -2 }}
             >
-              <span className="hidden sm:inline">{t("footer.backToTop")}</span>
-              <span className="w-9 h-9 rounded-full border border-white/20 flex items-center justify-center group-hover:border-primary group-hover:bg-primary/10 transition-all duration-300">
+              <span className="w-8 h-8 rounded-full border border-white/20 flex items-center justify-center group-hover:border-primary group-hover:bg-primary/10 transition-all duration-300">
                 <ArrowUp className="w-4 h-4" />
               </span>
             </motion.button>
