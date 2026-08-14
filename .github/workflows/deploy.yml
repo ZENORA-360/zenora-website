@@ -185,81 +185,112 @@ jobs:
           user="$(printf '%s' "$DEPLOY_SSH_USER" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
           port="$(printf '%s' "$DEPLOY_SSH_PORT" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
           dir="$(printf '%s' "$DEPLOY_APP_DIR" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
-          key="$(printf '%s' "$DEPLOY_SSH_KEY" | tr -d '\r')"
 
           echo "host_set=$([ -n "$host" ] && echo yes || echo NO)"
           echo "user_set=$([ -n "$user" ] && echo yes || echo NO)"
           echo "port_set=$([ -n "$port" ] && echo yes || echo NO)"
-          echo "key_set=$([ -n "$key" ] && echo yes || echo NO)"
+          echo "key_set=$([ -n "${DEPLOY_SSH_KEY}" ] && echo yes || echo NO)"
           echo "app_dir_set=$([ -n "$dir" ] && echo yes || echo NO)"
-          echo "host_len=${#host} user_len=${#user} port_len=${#port} key_len=${#key}"
-          echo "host_is_ipv4=$([[ "$host" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] && echo yes || echo no)"
-          echo "port_is_numeric=$([[ "$port" =~ ^[0-9]+$ ]] && echo yes || echo no)"
           echo "host_matches_51_255_205_10=$([ "$host" = "51.255.205.10" ] && echo yes || echo no)"
           echo "port_matches_1026=$([ "$port" = "1026" ] && echo yes || echo no)"
-          echo "key_has_begin=$(printf '%s' "$key" | grep -q 'BEGIN .*PRIVATE KEY' && echo yes || echo no)"
-          echo "key_has_end=$(printf '%s' "$key" | grep -q 'END .*PRIVATE KEY' && echo yes || echo no)"
+          echo "runner_ip=$(curl -4 -fsS --max-time 5 https://ifconfig.me || true)"
 
-          if [ -z "$host" ] || [ -z "$user" ] || [ -z "$port" ] || [ -z "$key" ] || [ -z "$dir" ]; then
-            echo "A deploy SSH secret is empty in the *production* environment."
-            echo "This job uses environment: production — repo secrets are not enough if env secrets exist empty, or if the env is missing the keys."
+          if [ -z "$host" ] || [ -z "$user" ] || [ -z "$port" ] || [ -z "${DEPLOY_SSH_KEY}" ] || [ -z "$dir" ]; then
+            echo "A deploy SSH secret is empty in environment 'production'."
             exit 1
           fi
           if ! [[ "$port" =~ ^[0-9]+$ ]]; then
-            echo "DEPLOY_SSH_PORT is not a number. appleboy would then fall back to 22."
+            echo "DEPLOY_SSH_PORT is not a number."
             exit 1
           fi
 
-          echo "TCP probe ${host}:${port} from GitHub runner (5s)..."
-          if timeout 5 bash -c "echo >/dev/tcp/${host}/${port}"; then
-            echo "TCP_OK: runner can reach host:port. If SCP still times out, look at UFW limit / too many connections."
-          else
-            echo "TCP_FAIL: GitHub cannot open TCP to this host:port."
-            echo "USER/KEY are not involved yet. Allow 1026/tcp from 0.0.0.0/0 (or GitHub), not only your laptop IP."
+          {
+            echo "DEPLOY_HOST=${host}"
+            echo "DEPLOY_USER=${user}"
+            echo "DEPLOY_PORT=${port}"
+            echo "APP_DIR=${dir}"
+          } >> "$GITHUB_ENV"
+
+          echo "TCP probe ${host}:${port} (10s)..."
+          set +e
+          nc -vz -w 10 "${host}" "${port}"
+          nc_rc=$?
+          set -e
+          if [ "$nc_rc" -ne 0 ]; then
+            echo "TCP_FAIL: GitHub runner cannot open ${host}:${port}."
+            echo "On the VPS, during the next run: sudo journalctl -fu ssh --no-pager"
+            echo "If that log stays silent, packets never arrive (OVH firewall / UFW / allowlist)."
             exit 1
           fi
+          echo "TCP_OK"
+
+      - name: Install deploy key
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: bash .github/scripts/ssh-with-secrets.sh
 
       - name: Copy compose assets to server
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.DEPLOY_SSH_HOST }}
-          username: ${{ secrets.DEPLOY_SSH_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: ${{ secrets.DEPLOY_SSH_PORT }}
-          timeout: 30s
-          source: "docker-compose.yml,deploy/remote-deploy.sh"
-          target: "${{ secrets.DEPLOY_APP_DIR }}"
-          overwrite: true
+        run: |
+          set -euo pipefail
+          ssh -v \
+            -i "${KEY_FILE}" \
+            -p "${DEPLOY_PORT}" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=10 \
+            "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "mkdir -p '${APP_DIR}/deploy'"
+          scp -v \
+            -P "${DEPLOY_PORT}" \
+            -i "${KEY_FILE}" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=10 \
+            docker-compose.yml \
+            "${DEPLOY_USER}@${DEPLOY_HOST}:${APP_DIR}/docker-compose.yml"
+          scp -v \
+            -P "${DEPLOY_PORT}" \
+            -i "${KEY_FILE}" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=10 \
+            deploy/remote-deploy.sh \
+            "${DEPLOY_USER}@${DEPLOY_HOST}:${APP_DIR}/deploy/remote-deploy.sh"
 
       - name: Deploy over SSH
-        uses: appleboy/ssh-action@v1.0.3
         env:
           HARBOR_REGISTRY: ${{ secrets.HARBOR_REGISTRY }}
           HARBOR_PROJECT: ${{ secrets.HARBOR_PROJECT }}
           HARBOR_USERNAME: ${{ secrets.HARBOR_USERNAME }}
           HARBOR_PASSWORD: ${{ secrets.HARBOR_PASSWORD }}
-          DEPLOY_APP_DIR: ${{ secrets.DEPLOY_APP_DIR }}
           WEB_HOST_PORT: ${{ vars.WEB_HOST_PORT || '80' }}
           IMAGE_TAG: ${{ needs.resolve.outputs.image_tag }}
           IMAGE_DIGEST: ${{ needs.resolve.outputs.image_digest }}
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
-        with:
-          host: ${{ secrets.DEPLOY_SSH_HOST }}
-          username: ${{ secrets.DEPLOY_SSH_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          port: ${{ secrets.DEPLOY_SSH_PORT }}
-          envs: HARBOR_REGISTRY,HARBOR_PROJECT,HARBOR_USERNAME,HARBOR_PASSWORD,DEPLOY_APP_DIR,WEB_HOST_PORT,IMAGE_TAG,IMAGE_DIGEST,IMAGE_NAME
-          script_stop: true
-          script: |
-            set -euo pipefail
-            mkdir -p "$DEPLOY_APP_DIR"
-            cd "$DEPLOY_APP_DIR"
-            chmod +x deploy/remote-deploy.sh || chmod +x remote-deploy.sh || true
-            if [ -f deploy/remote-deploy.sh ]; then
-              bash deploy/remote-deploy.sh
-            else
-              bash remote-deploy.sh
-            fi
+        run: |
+          set -euo pipefail
+          ssh \
+            -i "${KEY_FILE}" \
+            -p "${DEPLOY_PORT}" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=10 \
+            "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "export HARBOR_REGISTRY=$(printf '%q' "$HARBOR_REGISTRY")
+             export HARBOR_PROJECT=$(printf '%q' "$HARBOR_PROJECT")
+             export HARBOR_USERNAME=$(printf '%q' "$HARBOR_USERNAME")
+             export HARBOR_PASSWORD=$(printf '%q' "$HARBOR_PASSWORD")
+             export DEPLOY_APP_DIR=$(printf '%q' "$APP_DIR")
+             export WEB_HOST_PORT=$(printf '%q' "$WEB_HOST_PORT")
+             export IMAGE_TAG=$(printf '%q' "$IMAGE_TAG")
+             export IMAGE_DIGEST=$(printf '%q' "${IMAGE_DIGEST:-}")
+             export IMAGE_NAME=$(printf '%q' "$IMAGE_NAME")
+             chmod +x '${APP_DIR}/deploy/remote-deploy.sh'
+             bash '${APP_DIR}/deploy/remote-deploy.sh'"
 
       - name: Smoke test public endpoints
         shell: bash
