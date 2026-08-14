@@ -71,7 +71,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          REPO="${HARBOR_REGISTRY}/${HARBOR_PROJECT}/${IMAGE_NAME}"
+          # shellcheck source=.github/scripts/normalize-harbor.sh
+          source .github/scripts/normalize-harbor.sh
 
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             IMAGE_TAG="${{ inputs.image_tag }}"

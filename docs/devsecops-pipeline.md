@@ -90,10 +90,13 @@ Flux strict :
 ## Secrets GitHub
 
 ### Harbor
-- `HARBOR_REGISTRY`
-- `HARBOR_PROJECT`
+- `HARBOR_REGISTRY` — host only, lowercase. Example: `harbor.example.com`  
+  Not `https://harbor.example.com`, no trailing slash, no project path.
+- `HARBOR_PROJECT` — Harbor project, lowercase. Example: `zenora`
 - `HARBOR_USERNAME`
 - `HARBOR_PASSWORD`
+
+Image resulting: `<HARBOR_REGISTRY>/<HARBOR_PROJECT>/zenora-web:sha-<shortsha>`
 
 ### Déploiement SSH
 - `DEPLOY_SSH_HOST`
