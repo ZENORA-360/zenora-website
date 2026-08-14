@@ -172,6 +172,53 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Preflight SSH target
+        env:
+          DEPLOY_SSH_HOST: ${{ secrets.DEPLOY_SSH_HOST }}
+          DEPLOY_SSH_USER: ${{ secrets.DEPLOY_SSH_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_SSH_PORT: ${{ secrets.DEPLOY_SSH_PORT }}
+          DEPLOY_APP_DIR: ${{ secrets.DEPLOY_APP_DIR }}
+        run: |
+          set -euo pipefail
+          host="$(printf '%s' "$DEPLOY_SSH_HOST" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+          user="$(printf '%s' "$DEPLOY_SSH_USER" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+          port="$(printf '%s' "$DEPLOY_SSH_PORT" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+          dir="$(printf '%s' "$DEPLOY_APP_DIR" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+          key="$(printf '%s' "$DEPLOY_SSH_KEY" | tr -d '\r')"
+
+          echo "host_set=$([ -n "$host" ] && echo yes || echo NO)"
+          echo "user_set=$([ -n "$user" ] && echo yes || echo NO)"
+          echo "port_set=$([ -n "$port" ] && echo yes || echo NO)"
+          echo "key_set=$([ -n "$key" ] && echo yes || echo NO)"
+          echo "app_dir_set=$([ -n "$dir" ] && echo yes || echo NO)"
+          echo "host_len=${#host} user_len=${#user} port_len=${#port} key_len=${#key}"
+          echo "host_is_ipv4=$([[ "$host" =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]] && echo yes || echo no)"
+          echo "port_is_numeric=$([[ "$port" =~ ^[0-9]+$ ]] && echo yes || echo no)"
+          echo "host_matches_51_255_205_10=$([ "$host" = "51.255.205.10" ] && echo yes || echo no)"
+          echo "port_matches_1026=$([ "$port" = "1026" ] && echo yes || echo no)"
+          echo "key_has_begin=$(printf '%s' "$key" | grep -q 'BEGIN .*PRIVATE KEY' && echo yes || echo no)"
+          echo "key_has_end=$(printf '%s' "$key" | grep -q 'END .*PRIVATE KEY' && echo yes || echo no)"
+
+          if [ -z "$host" ] || [ -z "$user" ] || [ -z "$port" ] || [ -z "$key" ] || [ -z "$dir" ]; then
+            echo "A deploy SSH secret is empty in the *production* environment."
+            echo "This job uses environment: production — repo secrets are not enough if env secrets exist empty, or if the env is missing the keys."
+            exit 1
+          fi
+          if ! [[ "$port" =~ ^[0-9]+$ ]]; then
+            echo "DEPLOY_SSH_PORT is not a number. appleboy would then fall back to 22."
+            exit 1
+          fi
+
+          echo "TCP probe ${host}:${port} from GitHub runner (5s)..."
+          if timeout 5 bash -c "echo >/dev/tcp/${host}/${port}"; then
+            echo "TCP_OK: runner can reach host:port. If SCP still times out, look at UFW limit / too many connections."
+          else
+            echo "TCP_FAIL: GitHub cannot open TCP to this host:port."
+            echo "USER/KEY are not involved yet. Allow 1026/tcp from 0.0.0.0/0 (or GitHub), not only your laptop IP."
+            exit 1
+          fi
+
       - name: Copy compose assets to server
         uses: appleboy/scp-action@v0.1.7
         with:
