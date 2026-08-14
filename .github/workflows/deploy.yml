@@ -19,8 +19,8 @@ on:
         required: true
         type: string
       image_digest:
-        description: "Optional digest (sha256:...). Preferred when known."
-        required: false
+        description: "Image digest (sha256:...). Required for production."
+        required: true
         type: string
 
 permissions:
@@ -51,11 +51,11 @@ jobs:
       source_sha: ${{ steps.out.outputs.source_sha }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Download release metadata (workflow_run)
         if: github.event_name == 'workflow_run'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: release-metadata
           run-id: ${{ github.event.workflow_run.id }}
@@ -81,12 +81,9 @@ jobs:
               echo "Refusing to deploy 'latest' or empty tag. Pass an immutable sha-* tag."
               exit 1
             fi
-
-            if [ -n "$IMAGE_DIGEST" ]; then
-              IMAGE_REF="${REPO}@${IMAGE_DIGEST}"
-            else
-              IMAGE_REF="${REPO}:${IMAGE_TAG}"
-              IMAGE_DIGEST=""
+            if [ -z "$IMAGE_DIGEST" ] || [[ "$IMAGE_DIGEST" != sha256:* ]]; then
+              echo "Production deploy requires IMAGE_DIGEST as sha256:..."
+              exit 1
             fi
           else
             if [ ! -f release-metadata.json ]; then
@@ -95,9 +92,11 @@ jobs:
             fi
             IMAGE_TAG="$(python3 -c 'import json; print(json.load(open("release-metadata.json"))["image_tag"])')"
             IMAGE_DIGEST="$(python3 -c 'import json; print(json.load(open("release-metadata.json"))["image_digest"])')"
-            IMAGE_REF="$(python3 -c 'import json; print(json.load(open("release-metadata.json"))["image_ref"])')"
             SOURCE_SHA="$(python3 -c 'import json; print(json.load(open("release-metadata.json"))["git_sha"])')"
-            REPO="$(python3 -c 'import json; print(json.load(open("release-metadata.json"))["image_repo"])')"
+            if [ -z "$IMAGE_DIGEST" ] || [[ "$IMAGE_DIGEST" != sha256:* ]]; then
+              echo "Release metadata missing a valid image_digest."
+              exit 1
+            fi
           fi
 
           if [ -z "${IMAGE_TAG:-}" ]; then
@@ -117,7 +116,7 @@ jobs:
             echo "## Deploy target"
             echo ""
             echo "- Tag: \`$IMAGE_TAG\`"
-            echo "- Digest: \`${IMAGE_DIGEST:-n/a}\`"
+            echo "- Digest: \`$IMAGE_DIGEST\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
   verify-signature:
@@ -128,10 +127,10 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Install cosign
-        uses: sigstore/cosign-installer@v3
+        uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3
 
       - name: Verify signature before deploy
         env:
@@ -144,21 +143,18 @@ jobs:
         run: |
           set -euo pipefail
           source .github/scripts/normalize-harbor.sh
-          if [ -z "${IMAGE_TAG:-}" ]; then
-            echo "image_tag is empty — resolve job did not produce a deployable tag."
+          if [ -z "${IMAGE_TAG:-}" ] || [ -z "${IMAGE_DIGEST:-}" ]; then
+            echo "image_tag/image_digest missing from resolve outputs."
             exit 1
           fi
-          if [ -n "${IMAGE_DIGEST:-}" ]; then
-            REF="${REPO}@${IMAGE_DIGEST}"
-          else
-            REF="${REPO}:${IMAGE_TAG}"
-          fi
-          echo "Verifying tag ${IMAGE_TAG}"
+          REF="${REPO}@${IMAGE_DIGEST}"
+          echo "Verifying ${REF} (tag ${IMAGE_TAG})"
           echo "$HARBOR_PASSWORD" | docker login "$HARBOR_REGISTRY" -u "$HARBOR_USERNAME" --password-stdin
           cosign verify \
             --certificate-oidc-issuer https://token.actions.githubusercontent.com \
             --certificate-identity-regexp "https://github.com/${{ github.repository }}/.github/workflows/release.yml@.*" \
             "$REF"
+          docker logout "$HARBOR_REGISTRY" >/dev/null 2>&1 || true
 
   deploy:
     name: Deploy to production
@@ -170,7 +166,7 @@ jobs:
     environment: production
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Preflight SSH target
         env:
@@ -179,6 +175,7 @@ jobs:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_SSH_PORT: ${{ secrets.DEPLOY_SSH_PORT }}
           DEPLOY_APP_DIR: ${{ secrets.DEPLOY_APP_DIR }}
+          DEPLOY_SSH_KNOWN_HOSTS: ${{ secrets.DEPLOY_SSH_KNOWN_HOSTS }}
         run: |
           set -euo pipefail
           host="$(printf '%s' "$DEPLOY_SSH_HOST" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
@@ -190,13 +187,13 @@ jobs:
           echo "user_set=$([ -n "$user" ] && echo yes || echo NO)"
           echo "port_set=$([ -n "$port" ] && echo yes || echo NO)"
           echo "key_set=$([ -n "${DEPLOY_SSH_KEY}" ] && echo yes || echo NO)"
+          echo "known_hosts_set=$([ -n "${DEPLOY_SSH_KNOWN_HOSTS}" ] && echo yes || echo NO)"
           echo "app_dir_set=$([ -n "$dir" ] && echo yes || echo NO)"
-          echo "host_matches_51_255_205_10=$([ "$host" = "51.255.205.10" ] && echo yes || echo no)"
-          echo "port_matches_1026=$([ "$port" = "1026" ] && echo yes || echo no)"
           echo "runner_ip=$(curl -4 -fsS --max-time 5 https://ifconfig.me || true)"
 
-          if [ -z "$host" ] || [ -z "$user" ] || [ -z "$port" ] || [ -z "${DEPLOY_SSH_KEY}" ] || [ -z "$dir" ]; then
+          if [ -z "$host" ] || [ -z "$user" ] || [ -z "$port" ] || [ -z "${DEPLOY_SSH_KEY}" ] || [ -z "$dir" ] || [ -z "${DEPLOY_SSH_KNOWN_HOSTS}" ]; then
             echo "A deploy SSH secret is empty in environment 'production'."
+            echo "Required: DEPLOY_SSH_HOST USER KEY PORT APP_DIR KNOWN_HOSTS"
             exit 1
           fi
           if ! [[ "$port" =~ ^[0-9]+$ ]]; then
@@ -218,8 +215,7 @@ jobs:
           set -e
           if [ "$nc_rc" -ne 0 ]; then
             echo "TCP_FAIL: GitHub runner cannot open ${host}:${port}."
-            echo "On the VPS, during the next run: sudo journalctl -fu ssh --no-pager"
-            echo "If that log stays silent, packets never arrive (OVH firewall / UFW / allowlist)."
+            echo "On the VPS: sudo journalctl -fu ssh --no-pager / OVH firewall / UFW allow (not limit)."
             exit 1
           fi
           echo "TCP_OK"
@@ -227,10 +223,10 @@ jobs:
       - name: Install deploy key
         env:
           DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_SSH_KNOWN_HOSTS: ${{ secrets.DEPLOY_SSH_KNOWN_HOSTS }}
         run: bash .github/scripts/ssh-with-secrets.sh
 
       # One SSH TCP session (ControlMaster) for copy + deploy + smoke.
-      # Extra connections hit UFW limit / fail2ban and time out on later steps.
       - name: Deploy and smoke over SSH
         env:
           HARBOR_REGISTRY: ${{ secrets.HARBOR_REGISTRY }}
@@ -245,13 +241,13 @@ jobs:
         run: |
           set -euo pipefail
           CTRL="${RUNNER_TEMP}/zenora-ssh-mux-%C"
-          # Use -o Port= so the same options work for both ssh and scp.
           ssh_opts=(
             -i "${KEY_FILE}"
             -o "Port=${DEPLOY_PORT}"
             -o BatchMode=yes
             -o IdentitiesOnly=yes
-            -o StrictHostKeyChecking=accept-new
+            -o StrictHostKeyChecking=yes
+            -o "UserKnownHostsFile=${KNOWN_HOSTS_FILE}"
             -o ConnectTimeout=15
             -o ServerAliveInterval=30
             -o ControlMaster=auto
@@ -282,7 +278,7 @@ jobs:
              export PROXY_NETWORK=$(printf '%q' "$PROXY_NETWORK")
              export PUBLIC_BASE_HOST=$(printf '%q' "$PUBLIC_BASE_HOST")
              export IMAGE_TAG=$(printf '%q' "$IMAGE_TAG")
-             export IMAGE_DIGEST=$(printf '%q' "${IMAGE_DIGEST:-}")
+             export IMAGE_DIGEST=$(printf '%q' "$IMAGE_DIGEST")
              export IMAGE_NAME=$(printf '%q' "$IMAGE_NAME")
              chmod +x '${APP_DIR}/deploy/remote-deploy.sh' '${APP_DIR}/deploy/smoke-test.sh'
              bash '${APP_DIR}/deploy/remote-deploy.sh'
@@ -295,18 +291,21 @@ jobs:
             echo ""
             echo "- Tag: \`${{ needs.resolve.outputs.image_tag }}\`"
             echo "- Digest: \`${{ needs.resolve.outputs.image_digest }}\`"
-            echo "- Signature verified before SSH"
-            echo "- Smoke: container + \`${{ vars.PROXY_NETWORK || 'web-proxy' }}\` network (public HTTPS best-effort behind Cloudflare)"
+            echo "- Cosign verified on digest before SSH"
+            echo "- Pull by digest on host + SSH host key pinned"
+            echo "- Smoke: container + \`${{ vars.PROXY_NETWORK || 'web-proxy' }}\` network"
           } >> "$GITHUB_STEP_SUMMARY"
 
   notify:
     name: Notify deploy
     needs:
+      - resolve
+      - verify-signature
       - deploy
-    if: always()
+    if: always() && needs.resolve.result != 'skipped'
     uses: ./.github/workflows/reusable-notify.yml
     with:
-      status: ${{ needs.deploy.result }}
+      status: ${{ (needs.resolve.result == 'success' && needs.verify-signature.result == 'success' && needs.deploy.result == 'success') && 'success' || 'failure' }}
       title: "ZENORA production deploy"
       environment: production
     secrets:

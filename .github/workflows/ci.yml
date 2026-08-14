@@ -40,7 +40,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
 
@@ -58,20 +58,12 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Dependency review
-        continue-on-error: true
-        id: dep-review
-        uses: actions/dependency-review-action@v4
+        uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4.9.0
         with:
           fail-on-severity: high
-
-      - name: Dependency review status
-        run: |
-          if [ "${{ steps.dep-review.outcome }}" = "failure" ]; then
-            echo "::warning::Dependency review did not run (enable Dependency graph: Settings → Code security → Dependency graph). Trivy remains the hard vuln gate."
-          fi
 
   dockerfile-lint:
     name: Dockerfile lint
@@ -79,10 +71,10 @@ jobs:
     timeout-minutes: 5
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Hadolint
-        uses: hadolint/hadolint-action@v3.1.0
+        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
         with:
           dockerfile: Dockerfile
           config: .hadolint.yaml
@@ -90,19 +82,24 @@ jobs:
 
   sonar:
     name: SonarQube
-    # secrets.* cannot be used safely in job-level if; gate inside the step instead
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    # When SONAR_* secrets exist: quality gate is fail-closed (sonar.qualitygate.wait).
+    # When secrets are absent: job succeeds after an explicit skip.
+    if: >
+      (github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')) ||
+      (github.event_name == 'pull_request' && (github.base_ref == 'main' || github.base_ref == 'develop'))
     needs:
       - quality
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    outputs:
+      ran: ${{ steps.sonar-ready.outputs.enabled }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0
 
-      - name: Skip if Sonar secrets missing
+      - name: Detect Sonar secrets
         id: sonar-ready
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -110,14 +107,15 @@ jobs:
         run: |
           if [ -z "$SONAR_TOKEN" ] || [ -z "$SONAR_HOST_URL" ]; then
             echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "SonarQube secrets not configured — skipping."
+            echo "SonarQube secrets not configured — skipping (configure SONAR_TOKEN + SONAR_HOST_URL to enforce QG)."
           else
             echo "enabled=true" >> "$GITHUB_OUTPUT"
+            echo "SonarQube enabled — quality gate will block on failure."
           fi
 
       - name: Setup Node
         if: steps.sonar-ready.outputs.enabled == 'true'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
@@ -130,9 +128,9 @@ jobs:
         if: steps.sonar-ready.outputs.enabled == 'true'
         run: npm run test -- --coverage
 
-      - name: SonarQube scan
+      - name: SonarQube scan (fail-closed quality gate)
         if: steps.sonar-ready.outputs.enabled == 'true'
-        uses: SonarSource/sonarqube-scan-action@v4
+        uses: SonarSource/sonarqube-scan-action@689fb39b34b9aa95ebc5f8f119343ddd51542402 # v4
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
@@ -143,7 +141,7 @@ jobs:
             -Dsonar.exclusions=**/dist/**,**/coverage/**,**/*.test.*,**/*.spec.*
             -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
             -Dsonar.qualitygate.wait=true
-
+            ${{ github.event_name == 'pull_request' && format('-Dsonar.pullrequest.key={0} -Dsonar.pullrequest.branch={1} -Dsonar.pullrequest.base={2}', github.event.pull_request.number, github.head_ref, github.base_ref) || format('-Dsonar.branch.name={0}', github.ref_name) }}
   ci-summary:
     name: CI summary
     if: always()
@@ -152,6 +150,7 @@ jobs:
       - secret-scan
       - dependency-review
       - dockerfile-lint
+      - sonar
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -166,21 +165,34 @@ jobs:
             echo "| secret-scan | ${{ needs.secret-scan.result }} |"
             echo "| dependency-review | ${{ needs.dependency-review.result }} |"
             echo "| dockerfile-lint | ${{ needs.dockerfile-lint.result }} |"
+            echo "| sonar | ${{ needs.sonar.result }} |"
           } >> "$GITHUB_STEP_SUMMARY"
 
+          failed=0
           for result in \
             "${{ needs.quality.result }}" \
             "${{ needs.secret-scan.result }}" \
             "${{ needs.dockerfile-lint.result }}"
           do
             if [ "$result" != "success" ] && [ "$result" != "skipped" ]; then
-              echo "CI gate failed."
-              exit 1
+              failed=1
             fi
           done
 
-          # dependency-review needs GitHub Dependency graph (and GHAS on private orgs).
-          # It is advisory until that is enabled; Trivy stays fail-closed.
+          # PR-only: dependency graph must be enabled; treat as hard fail.
           if [ "${{ needs.dependency-review.result }}" = "failure" ]; then
-            echo "dependency-review failed — treating as warning (enable Dependency graph to enforce it)."
+            echo "dependency-review failed (enable Dependency graph + fix HIGH+ vulns)."
+            failed=1
           fi
+
+          # Sonar: skipped on PRs / when job if excludes; failure blocks when it ran.
+          if [ "${{ needs.sonar.result }}" = "failure" ]; then
+            echo "SonarQube quality gate failed."
+            failed=1
+          fi
+
+          if [ "$failed" -ne 0 ]; then
+            echo "CI gate failed."
+            exit 1
+          fi
+          echo "CI gate passed."

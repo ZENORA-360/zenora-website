@@ -17,7 +17,8 @@
 
 services:
   web:
-    image: ${HARBOR_REGISTRY:-harbor.local}/${HARBOR_PROJECT:-zenora}/zenora-web:${IMAGE_TAG:-latest}
+    # Prefer IMAGE_REF (repo@sha256:… or repo:tag) written by remote-deploy.sh.
+    image: ${IMAGE_REF:-harbor.local/zenora/zenora-web:latest}
     build:
       context: .
       dockerfile: ${DOCKERFILE:-Dockerfile}

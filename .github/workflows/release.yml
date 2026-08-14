@@ -41,7 +41,7 @@ jobs:
     timeout-minutes: 45
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Require Harbor secrets
         env:
@@ -85,14 +85,14 @@ jobs:
         run: echo "$HARBOR_PASSWORD" | docker login "$HARBOR_REGISTRY" -u "$HARBOR_USERNAME" --password-stdin
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3
 
       - name: Install crane
-        uses: imjasonh/setup-crane@v0.4
+        uses: imjasonh/setup-crane@31b88efe9de28ae0ffa220711af4b60be9435f6e # v0.4
 
       - name: Docker metadata labels
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5
         with:
           images: ${{ env.REPO }}
           labels: |
@@ -103,7 +103,7 @@ jobs:
 
       # 1) Build locally only — never push an unscanned image
       - name: Build candidate image (local load)
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           context: .
           file: ./Dockerfile
@@ -132,7 +132,7 @@ jobs:
 
       - name: Upload Trivy image SARIF
         if: always() && hashFiles('trivy-image.sarif') != ''
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v4.37.7
         with:
           sarif_file: trivy-image.sarif
           category: trivy-image
@@ -188,14 +188,14 @@ jobs:
           fi
 
       - name: Generate SBOM (SPDX)
-        uses: anchore/sbom-action@v0
+        uses: anchore/sbom-action@e22c389904149dbc22b58101806040fa8d37a610 # v0
         with:
           image: ${{ env.REPO }}@${{ steps.push.outputs.digest }}
           format: spdx-json
           output-file: sbom.spdx.json
 
       - name: Install cosign
-        uses: sigstore/cosign-installer@v3
+        uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3
 
       - name: Sign image (keyless OIDC)
         run: cosign sign --yes "${REPO}@${DIGEST}"
@@ -211,7 +211,7 @@ jobs:
         run: cosign attach sbom --sbom sbom.spdx.json "${REPO}@${DIGEST}"
 
       - name: Attest build provenance
-        uses: actions/attest-build-provenance@v1
+        uses: actions/attest-build-provenance@ef244123eb79f2f7a7e75d99086184180e6d0018 # v1
         with:
           subject-name: ${{ env.REPO }}
           subject-digest: ${{ steps.push.outputs.digest }}
@@ -236,7 +236,7 @@ jobs:
           PY
 
       - name: Upload release artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: release-metadata
           path: |
@@ -259,11 +259,12 @@ jobs:
   notify:
     name: Notify release
     needs:
+      - quality
       - build-scan-sign-publish
     if: always()
     uses: ./.github/workflows/reusable-notify.yml
     with:
-      status: ${{ needs.build-scan-sign-publish.result }}
+      status: ${{ (needs.quality.result == 'success' && needs.build-scan-sign-publish.result == 'success') && 'success' || 'failure' }}
       title: "ZENORA image release"
       environment: registry
     secrets:

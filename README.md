@@ -211,30 +211,28 @@ Variables runtime serveur : voir `deploy/.env.production.example`
 
 ## Secrets GitHub à prévoir
 
+Détail opérationnel : [`docs/devsecops-pipeline.md`](docs/devsecops-pipeline.md).
+
 ### Harbor
 
-- `HARBOR_REGISTRY`
-- `HARBOR_PROJECT`
-- `HARBOR_USERNAME`
-- `HARBOR_PASSWORD`
+- `HARBOR_REGISTRY` / `HARBOR_PROJECT` / `HARBOR_USERNAME` / `HARBOR_PASSWORD`
 
-### Déploiement SSH
+### Déploiement SSH (environment `production`)
 
-- `DEPLOY_SSH_HOST`
-- `DEPLOY_SSH_USER`
-- `DEPLOY_SSH_KEY`
-- `DEPLOY_SSH_PORT`
-- `DEPLOY_APP_DIR`
+- `DEPLOY_SSH_HOST` / `DEPLOY_SSH_USER` / `DEPLOY_SSH_KEY` / `DEPLOY_SSH_PORT` / `DEPLOY_APP_DIR`
+- `DEPLOY_SSH_KNOWN_HOSTS` — sortie de `ssh-keyscan -p PORT HOST` (obligatoire)
 
-### Optionnel
+### Qualité / notify
 
-- `SONAR_HOST_URL`
-- `SONAR_TOKEN`
+- `SONAR_HOST_URL` + `SONAR_TOKEN` — active le quality gate fail-closed
+- `SLACK_WEBHOOK_URL` — secret **repository**
 
-Je recommande aussi de définir des variables d'environnement GitHub côté `production` :
+Variables environment `production` :
 
 - `PROXY_NETWORK` (défaut `web-proxy`)
 - `PUBLIC_BASE_HOST`
+
+Protections recommandées : reviewers sur `production`, deployment branch = `main`, branch protection (`CI summary`, `Security summary`), Dependency graph ON, exception Cloudflare sur `/health`.
 
 ---
 

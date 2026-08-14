@@ -1,182 +1,183 @@
 # Pipeline DevSecOps
 
 Ce document décrit la chaîne CI/CD de `zenora360`.  
-Je l'ai conçue comme une **base réutilisable** pour nos projets front Dockerisés, pas comme un bricolage mono-repo.
+Base **réutilisable** pour fronts Dockerisés (Harbor + Compose + reverse proxy).
 
-## Niveau de maturité (audit)
-
-### Avant le durcissement
-La base était **propre et structurée**, mais pas encore senior sur les points qui comptent en production :
-
-- image poussée **avant** le scan Trivy (fenêtre de risque)
-- Trivy en mode rapport, sans **fail-closed**
-- déploiement sans **vérification Cosign**
-- redeploy manuel qui pouvait tomber sur `latest`
-- peu de réutilisation réelle entre workflows
-- lint applicatif qui cassait la gate CI
-
-### Niveau actuel
-Je la considère maintenant **senior / production-ready** pour un front SPA livré via Harbor + Docker Compose :
+## Niveau de maturité
 
 | Domaine | Niveau | Commentaire |
 | ------- | ------ | ----------- |
-| Qualité CI | Senior | lint / typecheck / test / build + Hadolint + Gitleaks + dependency review |
-| Supply chain | Senior | build → scan gate → push → Cosign keyless → SBOM → provenance |
-| Déploiement | Senior | signature vérifiée, tag immuable, healthcheck, rollback, smoke |
-| Réutilisation | Senior | workflows `reusable-*` appelables depuis d'autres repos |
-| Observabilité | Correct+ | step summaries + Slack optionnel |
-| Multi-env / promotion | Correct | prod d'abord ; staging/promotion = prochaine couche |
-
-Ce n'est **pas** du niveau “plateforme Kubernetes multi-clusters + policy OPA globale”.  
-Pour notre modèle (Harbor + OVH + Compose + Watchtower), c'est le bon niveau : **exigeant, exploitable, réutilisable**.
+| Qualité CI | Senior | lint / typecheck / test / build + Hadolint + Gitleaks + dependency review + Sonar QG |
+| Supply chain | Senior | build → Trivy gate → push → Cosign keyless → SBOM → provenance ; actions pinées SHA |
+| Déploiement | Senior | Cosign sur **digest**, pull par digest, SSH host key pinée, health + rollback vérifié, smoke réseau NPM |
+| Réutilisation | Senior | workflows `reusable-*` |
+| Observabilité | Senior | step summaries + Slack (status honnête sur resolve/verify/deploy) |
 
 ## Philosophie
 
-1. **Un seul chemin de vérité** : Node 22 + npm partout (local, CI, Docker).
-2. **Fail closed** sur la supply chain : pas d'image publiée si le scan HIGH/CRITICAL échoue.
+1. **Un seul chemin de vérité** : Node 22 + npm partout.
+2. **Fail closed** sur la supply chain et sur Sonar dès que les secrets existent.
 3. **Artefacts vérifiables** : digest, signature, SBOM, provenance.
-4. **Déployer une image**, jamais du code brut sur le serveur.
-5. **Rollback simple** si le healthcheck échoue.
+4. **Déployer une image par digest**, jamais du code brut ni `latest`.
+5. **Rollback** avec preuve de santé (`rollback healthy` / `rollback failed`).
 
 ## Découpage des workflows
 
 ```text
 .github/workflows/
-├── reusable-quality.yml   # gate qualité réutilisable
-├── reusable-notify.yml    # Slack optionnel
-├── ci.yml                 # PR / branches
-├── security.yml           # scans continus + CodeQL + ZAP
-├── release.yml            # build → scan → sign → publish
-└── deploy.yml             # verify → SSH deploy → smoke
+├── reusable-quality.yml
+├── reusable-notify.yml
+├── ci.yml
+├── security.yml
+├── release.yml
+└── deploy.yml
 ```
 
 ### `ci.yml`
 - quality via `reusable-quality.yml`
 - Gitleaks
-- dependency review (PR, fail on high)
-- Hadolint sur `Dockerfile`
-- SonarQube optionnel (skip propre si secrets absents)
-- summary job qui échoue si une gate dure échoue
+- dependency review (**fail-closed** sur PR — Dependency graph requis)
+- Hadolint
+- SonarQube : si `SONAR_*` présents → `sonar.qualitygate.wait=true` (bloque) ; sinon skip explicite
+- `CI summary` agrège et échoue si une gate dure échoue
 
 ### `security.yml`
-- Trivy fs + config avec **exit-code 1**
+- Trivy fs + config fail-closed HIGH/CRITICAL
 - CodeQL `security-extended`
-- npm audit en **advisory** (artefact, non bloquant)
-- ZAP baseline planifié / manuel (`-I` pour ne pas casser sur WARN connus)
+- npm audit advisory
+- ZAP baseline hebdo / manuel (`-I`)
 
-### `release.yml` (cœur senior)
-Flux strict :
-
-1. quality gate
-2. build image **locale** (`load: true`, `push: false`)
-3. Trivy image **gate HIGH/CRITICAL**
-4. tag + push Harbor **seulement si le scan passe**
-5. Cosign keyless (OIDC GitHub)
-6. verify signature
-7. attach SBOM SPDX
-8. attest provenance
-9. artefact `release-metadata.json` (tag + digest + ref)
+### `release.yml`
+1. quality  
+2. build locale (`push: false`)  
+3. Trivy image gate  
+4. push Harbor (+ retries)  
+5. Cosign keyless → verify  
+6. SBOM + provenance  
+7. artefact `release-metadata.json` (tag + **digest**)
 
 ### `deploy.yml`
-1. récupère les metadata du release (ou tag immuable en manuel)
-2. **refuse `latest`**
-3. vérifie Cosign **avant** SSH
-4. copie `docker-compose.yml` + `deploy/remote-deploy.sh`
-5. pull / recreate
-6. healthcheck local
-7. rollback vers l'image précédente si besoin
-8. smoke `/health` + `/` sur le domaine public
+1. metadata release ou dispatch (`image_tag` + **`image_digest` obligatoires**)  
+2. refuse `latest`  
+3. Cosign verify sur `repo@sha256:…`  
+4. SSH mux (1 session TCP) + **host key pinée** (`DEPLOY_SSH_KNOWN_HOSTS`)  
+5. pull / recreate **par digest** (`IMAGE_REF=…@sha256:…`)  
+6. healthcheck ; rollback avec re-test santé  
+7. smoke : container + réseau NPM + digest match ; HTTPS public best-effort  
 
 ## Secrets GitHub
 
-### Harbor
-- `HARBOR_REGISTRY` — host only, lowercase. Example: `harbor.example.com`  
-  Not `https://harbor.example.com`, no trailing slash, no project path.
-- `HARBOR_PROJECT` — Harbor project, lowercase. Example: `zenora`
-- `HARBOR_USERNAME`
-- `HARBOR_PASSWORD`
+### Harbor (repo ou org)
+- `HARBOR_REGISTRY` — host only, lowercase (`harbor.example.com`)
+- `HARBOR_PROJECT` — lowercase
+- `HARBOR_USERNAME` / `HARBOR_PASSWORD`
 
-Image resulting: `<HARBOR_REGISTRY>/<HARBOR_PROJECT>/zenora-web:sha-<shortsha>`
-
-Un `docker push` en HTTP 500 n’est pas un bug de tag : login et tag ont déjà réussi. À vérifier sur Harbor : logs `registry` / `core`, disque, quota du projet, timeout du reverse proxy.
-
-### Déploiement SSH
+### Déploiement SSH (environment `production`)
 - `DEPLOY_SSH_HOST`
 - `DEPLOY_SSH_USER`
-- `DEPLOY_SSH_KEY`
+- `DEPLOY_SSH_KEY` — clé **privée**
 - `DEPLOY_SSH_PORT`
 - `DEPLOY_APP_DIR`
+- `DEPLOY_SSH_KNOWN_HOSTS` — sortie de `ssh-keyscan` (pin SSH)
 
-`dial tcp … i/o timeout` = GitHub n’atteint pas le SSH du VPS (pare-feu / security group / port).  
-Le runner GitHub n’a pas d’IP fixe simple : ouvrir 22 vers Internet (restreint si possible), ou poser un **self-hosted runner** sur le VPS. Tester depuis l’extérieur : `nc -vz HOST PORT`.
+Générer le known_hosts :
 
-### Optionnel
-- `SONAR_HOST_URL`
-- `SONAR_TOKEN`
-- `SLACK_WEBHOOK_URL`
+```bash
+ssh-keyscan -p "$DEPLOY_SSH_PORT" "$DEPLOY_SSH_HOST"
+```
 
-## Variables d'environnement GitHub (`production`)
+Coller **toute** la sortie dans le secret environment `production` → `DEPLOY_SSH_KNOWN_HOSTS`.  
+Sans ce secret, le deploy refuse de démarrer (plus de TOFU `accept-new`).
 
-- `PROXY_NETWORK` (réseau Docker NPM, défaut `web-proxy`)
+### Qualité / notify
+- `SONAR_HOST_URL` + `SONAR_TOKEN` — active le QG fail-closed
+- `SLACK_WEBHOOK_URL` — secret **repository** (pas seulement environment)
+
+## Variables (`production`)
+
+- `PROXY_NETWORK` (défaut `web-proxy`) — réseau Docker Nginx Proxy Manager
 - `PUBLIC_BASE_HOST` (ex. `zenora360.com`)
 
-Le conteneur n’ouvre **pas** le port 80 de l’hôte : NPM (qui tient déjà `:80`/`:443`) route vers `zenora-web:8080` sur le réseau partagé.
+Le conteneur n’ouvre **pas** `:80` hôte. NPM route vers `zenora-web:8080` sur le réseau partagé.
 
-Je recommande d'activer une **approbation manuelle** sur l'environment `production`.
+## Protection GitHub (à appliquer)
+
+### Environment `production`
+- Required reviewers (au moins 1)
+- Deployment branches : **uniquement `main`** (bloque les `workflow_dispatch` depuis une autre branche)
+
+### Branch protection `main`
+Checks **required** :
+- `CI summary`
+- `Security summary`
+
+Force-push / delete branch : désactivés.  
+`enforce_admins` : false (hotfix admin possible). Reviews PR non forcées (solo-friendly) — le **vrai** gate humain est l’approval environment `production` avant SSH.
+
+Release n’est pas un check PR (il tourne sur `main` après merge) ; la chaîne reste Release → Deploy.
+### Dependency graph
+Settings → Code security → **Dependency graph** = Enabled  
+Sinon `dependency-review` échoue sur les PR (voulu).
+
+## Cloudflare — exception `/health`
+
+Le smoke public depuis datacenter peut recevoir **403** (Bot Fight / WAF).
+
+Dans Cloudflare (zone `zenora360.com`) :
+
+1. **Security → WAF** (ou Configuration Rules)  
+2. Créer une règle :  
+   - When : `http.request.uri.path eq "/health"`  
+   - Then : Skip Bot Fight Mode / managed challenges (ou Allow)  
+3. Optionnel : Cache Rule — Bypass cache pour `/health`
+
+Le smoke **obligatoire** reste : container + réseau `web-proxy`. Le HTTPS public est best-effort tant que CF bloque les bots.
 
 ## Convention d'image
 
 ```text
 <harbor>/<project>/zenora-web:sha-<shortsha>
+<harbor>/<project>/zenora-web@sha256:<digest>
 ```
 
-- `sha-xxxxxxx` : tag de déploiement immuable
-- `latest` : alias de commodité sur `main` uniquement
-- `vX.Y.Z` : si tag Git
-
-En exploitation, on déploie **toujours** un `sha-*` (ou un digest).  
-Jamais `latest` en production.
+En prod on déploie **toujours** le digest. Le tag `sha-*` reste l’alias humain.
 
 ## Convention serveur
 
 Dans `DEPLOY_APP_DIR` :
 
 - `docker-compose.yml`
-- `.env` (régénéré par le deploy)
-- `deploy/remote-deploy.sh`
-- `.deploy/last-success.env` (audit trail local)
+- `.env` (régénéré ; contient `IMAGE_REF=…@sha256:…`)
+- `deploy/remote-deploy.sh` / `deploy/smoke-test.sh`
+- `.deploy/last-success.env`
 
-## Réutilisation sur un autre projet
+Harbor : `docker login` le temps du pull, puis **`docker logout`** (trap).
 
-1. Copier `.github/workflows/`
-2. Adapter `IMAGE_NAME`, secrets Harbor, `DEPLOY_*`
-3. Garder le flux build → scan → push → sign → verify → deploy
-4. Documenter les secrets dans le README du nouveau repo
+## SSH / pare-feu
 
-Je ne repars **pas** d'un workflow monolithique.
+- Préférer `ufw allow <port>/tcp` plutôt que `limit` (sinon timeouts multi-connexions ; le workflow utilise déjà ControlMaster).
+- `dial tcp … i/o timeout` = paquets qui n’arrivent pas (OVH Network Firewall / UFW / mauvais port secret).
 
-## Check-list avant premier run
+## Check-list
 
 - [ ] secrets Harbor
-- [ ] secrets SSH
-- [ ] environment `production` créé (+ reviewers si possible)
-- [ ] `DEPLOY_APP_DIR` accessible
-- [ ] Harbor joignable depuis le serveur
-- [ ] branch protection : CI required sur `main`
-- [ ] smoke URL publique correcte (`PUBLIC_BASE_HOST`)
+- [ ] secrets SSH + **`DEPLOY_SSH_KNOWN_HOSTS`** (bloquant au prochain deploy)
+- [ ] environment `production` : reviewers + branch `main` only
+- [ ] Dependency graph / Dependabot alerts
+- [ ] branch protection : `CI summary` + `Security summary`
+- [ ] `PROXY_NETWORK` = réseau NPM
+- [ ] NPM → `zenora-web:8080`
+- [ ] Cloudflare exception `/health` (recommandé)
+- [ ] `SONAR_*` configurés (QG fail-closed dès qu’ils existent)
+- [ ] `SLACK_WEBHOOK_URL` (repo secret)
+- [ ] Au prochain Deploy : **Approuver** l’environment `production` dans l’UI Actions
 
-## Ce qui reste optionnel (niveau plateforme)
+## Réutilisation
 
-Pas bloquant pour ce modèle de livraison :
+1. Copier `.github/workflows/` + `.github/scripts/` + `deploy/`
+2. Adapter `IMAGE_NAME`, secrets, `PROXY_NETWORK`
+3. Garder : build → scan → push → sign → verify(digest) → pull(digest) → smoke
 
-- staging + promotion d'image sans rebuild
-- policy-as-code OPA/Conftest
-- vérification Cosign aussi côté hôte (en plus du runner)
-- pin SHA des actions GitHub
-- SLSA provenance consumer côté Harbor
-- canary / blue-green (souvent overkill pour une SPA Compose)
+## Décision
 
-## Décision d'architecture
-
-Pour ZENORA et les prochains fronts similaires, je préfère cette base **senior pragmatique** à une usine à gaz.  
-Elle est assez stricte pour la supply chain, assez simple pour être reprise, et assez claire pour être débuguée à 3h du matin.
+Pour ZENORA : base **senior pragmatique** — stricte sur la supply chain, simple à opérer, débogable de nuit.
