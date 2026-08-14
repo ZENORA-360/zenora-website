@@ -152,17 +152,39 @@ jobs:
         id: push
         shell: bash
         run: |
-          docker push "${REPO}:${IMAGE_TAG}"
+          set -euo pipefail
+
+          push_with_retry() {
+            local ref="$1"
+            local attempt=1
+            local max=3
+            while true; do
+              echo "Pushing ${ref} (attempt ${attempt}/${max})"
+              if docker push "${ref}"; then
+                return 0
+              fi
+              if [ "${attempt}" -ge "${max}" ]; then
+                echo "::error::Harbor returned a server error during docker push (often HTTP 500)."
+                echo "The image tag is valid and login succeeded — this is the registry, not GitHub Actions YAML."
+                echo "On the Harbor host check: registry/core logs, disk space, project quota, proxy timeouts."
+                return 1
+              fi
+              sleep $((attempt * 15))
+              attempt=$((attempt + 1))
+            done
+          }
+
+          push_with_retry "${REPO}:${IMAGE_TAG}"
           DIGEST="$(crane digest "${REPO}:${IMAGE_TAG}")"
           echo "digest=$DIGEST" >> "$GITHUB_OUTPUT"
           echo "DIGEST=$DIGEST" >> "$GITHUB_ENV"
           echo "Resolved digest: $DIGEST"
 
           if [ "${{ github.ref }}" = "refs/heads/main" ]; then
-            docker push "${REPO}:latest"
+            push_with_retry "${REPO}:latest"
           fi
           if [[ "${{ github.ref }}" == refs/tags/* ]]; then
-            docker push "${REPO}:${{ github.ref_name }}"
+            push_with_retry "${REPO}:${{ github.ref_name }}"
           fi
 
       - name: Generate SBOM (SPDX)

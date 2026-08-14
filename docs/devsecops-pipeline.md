@@ -98,6 +98,8 @@ Flux strict :
 
 Image resulting: `<HARBOR_REGISTRY>/<HARBOR_PROJECT>/zenora-web:sha-<shortsha>`
 
+Un `docker push` en HTTP 500 n’est pas un bug de tag : login et tag ont déjà réussi. À vérifier sur Harbor : logs `registry` / `core`, disque, quota du projet, timeout du reverse proxy.
+
 ### Déploiement SSH
 - `DEPLOY_SSH_HOST`
 - `DEPLOY_SSH_USER`
