@@ -107,6 +107,9 @@ Un `docker push` en HTTP 500 n’est pas un bug de tag : login et tag ont déjà
 - `DEPLOY_SSH_PORT`
 - `DEPLOY_APP_DIR`
 
+`dial tcp … i/o timeout` = GitHub n’atteint pas le SSH du VPS (pare-feu / security group / port).  
+Le runner GitHub n’a pas d’IP fixe simple : ouvrir 22 vers Internet (restreint si possible), ou poser un **self-hosted runner** sur le VPS. Tester depuis l’extérieur : `nc -vz HOST PORT`.
+
 ### Optionnel
 - `SONAR_HOST_URL`
 - `SONAR_TOKEN`

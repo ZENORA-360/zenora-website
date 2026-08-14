@@ -179,6 +179,7 @@ jobs:
           username: ${{ secrets.DEPLOY_SSH_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           port: ${{ secrets.DEPLOY_SSH_PORT }}
+          timeout: 30s
           source: "docker-compose.yml,deploy/remote-deploy.sh"
           target: "${{ secrets.DEPLOY_APP_DIR }}"
           overwrite: true
