@@ -258,7 +258,8 @@ jobs:
             -o StrictHostKeyChecking=accept-new \
             -o ConnectTimeout=10 \
             deploy/remote-deploy.sh \
-            "${DEPLOY_USER}@${DEPLOY_HOST}:${APP_DIR}/deploy/remote-deploy.sh"
+            deploy/smoke-test.sh \
+            "${DEPLOY_USER}@${DEPLOY_HOST}:${APP_DIR}/deploy/"
 
       - name: Deploy over SSH
         env:
@@ -289,16 +290,26 @@ jobs:
              export IMAGE_TAG=$(printf '%q' "$IMAGE_TAG")
              export IMAGE_DIGEST=$(printf '%q' "${IMAGE_DIGEST:-}")
              export IMAGE_NAME=$(printf '%q' "$IMAGE_NAME")
-             chmod +x '${APP_DIR}/deploy/remote-deploy.sh'
+             chmod +x '${APP_DIR}/deploy/remote-deploy.sh' '${APP_DIR}/deploy/smoke-test.sh'
              bash '${APP_DIR}/deploy/remote-deploy.sh'"
 
-      - name: Smoke test public endpoints
-        shell: bash
+      - name: Smoke test (VPS network + optional public)
+        env:
+          PROXY_NETWORK: ${{ vars.PROXY_NETWORK || 'web-proxy' }}
+          PUBLIC_BASE_HOST: ${{ vars.PUBLIC_BASE_HOST || 'zenora360.com' }}
         run: |
           set -euo pipefail
-          URL="https://${{ vars.PUBLIC_BASE_HOST || 'zenora360.com' }}"
-          curl -fsS "${URL}/health"
-          curl -fsS -o /dev/null -w "%{http_code}\n" "${URL}/" | grep -E '200|301|302'
+          ssh \
+            -i "${KEY_FILE}" \
+            -p "${DEPLOY_PORT}" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=accept-new \
+            -o ConnectTimeout=10 \
+            "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "export PROXY_NETWORK=$(printf '%q' "$PROXY_NETWORK")
+             export PUBLIC_BASE_HOST=$(printf '%q' "$PUBLIC_BASE_HOST")
+             bash '${APP_DIR}/deploy/smoke-test.sh'"
 
       - name: Deployment summary
         run: |
@@ -308,7 +319,7 @@ jobs:
             echo "- Tag: \`${{ needs.resolve.outputs.image_tag }}\`"
             echo "- Digest: \`${{ needs.resolve.outputs.image_digest }}\`"
             echo "- Signature verified before SSH"
-            echo "- Smoke checks: /health + /"
+            echo "- Smoke: container + \`${{ vars.PROXY_NETWORK || 'web-proxy' }}\` network (public HTTPS best-effort behind Cloudflare)"
           } >> "$GITHUB_STEP_SUMMARY"
 
   notify:
