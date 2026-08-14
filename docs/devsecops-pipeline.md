@@ -117,8 +117,10 @@ Le runner GitHub n’a pas d’IP fixe simple : ouvrir 22 vers Internet (restrei
 
 ## Variables d'environnement GitHub (`production`)
 
-- `WEB_HOST_PORT` (souvent `80`)
+- `PROXY_NETWORK` (réseau Docker NPM, défaut `web-proxy`)
 - `PUBLIC_BASE_HOST` (ex. `zenora360.com`)
+
+Le conteneur n’ouvre **pas** le port 80 de l’hôte : NPM (qui tient déjà `:80`/`:443`) route vers `zenora-web:8080` sur le réseau partagé.
 
 Je recommande d'activer une **approbation manuelle** sur l'environment `production`.
 

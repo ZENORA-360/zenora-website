@@ -266,7 +266,7 @@ jobs:
           HARBOR_PROJECT: ${{ secrets.HARBOR_PROJECT }}
           HARBOR_USERNAME: ${{ secrets.HARBOR_USERNAME }}
           HARBOR_PASSWORD: ${{ secrets.HARBOR_PASSWORD }}
-          WEB_HOST_PORT: ${{ vars.WEB_HOST_PORT || '80' }}
+          PROXY_NETWORK: ${{ vars.PROXY_NETWORK || 'web-proxy' }}
           IMAGE_TAG: ${{ needs.resolve.outputs.image_tag }}
           IMAGE_DIGEST: ${{ needs.resolve.outputs.image_digest }}
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
@@ -285,7 +285,7 @@ jobs:
              export HARBOR_USERNAME=$(printf '%q' "$HARBOR_USERNAME")
              export HARBOR_PASSWORD=$(printf '%q' "$HARBOR_PASSWORD")
              export DEPLOY_APP_DIR=$(printf '%q' "$APP_DIR")
-             export WEB_HOST_PORT=$(printf '%q' "$WEB_HOST_PORT")
+             export PROXY_NETWORK=$(printf '%q' "$PROXY_NETWORK")
              export IMAGE_TAG=$(printf '%q' "$IMAGE_TAG")
              export IMAGE_DIGEST=$(printf '%q' "${IMAGE_DIGEST:-}")
              export IMAGE_NAME=$(printf '%q' "$IMAGE_NAME")

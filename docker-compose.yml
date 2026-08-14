@@ -1,32 +1,25 @@
 # =============================================================================
-# ZENORA Web — Compose stack (local build + Harbor / Watchtower ready)
+# ZENORA Web — Compose stack (local build + Harbor / NPM ready)
 # =============================================================================
 #
-# Local (build from source — full multi-stage):
-#   docker compose up -d --build
+# Production (Nginx Proxy Manager — no host port bind):
+#   PROXY_NETWORK=web-proxy  (external network shared with NPM)
+#   docker compose pull web && docker compose up -d web
+#   In NPM: forward zenora360.com → zenora-web:8080 (same Docker network)
+#
+# Local (publish a host port, create a local bridge if needed):
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
 #   → http://localhost:${WEB_HOST_PORT:-8080}
 #
-# Local (if npm inside Docker fails — build assets on host first):
-#   npm ci && npm run build
-#   DOCKERFILE=Dockerfile.runtime docker compose build web
-#   docker compose up -d web
-#
-# Production server (pull from Harbor, Watchtower refreshes):
-#   Create `.env` from `.env.example` with Harbor vars, then:
-#     docker compose pull web && docker compose up -d
-#   Optional Watchtower:
-#     docker compose --profile watchtower up -d
-#
-# Watchtower only updates containers with com.centurylinklabs.watchtower.enable=true
+# Optional Watchtower:
+#   docker compose --profile watchtower up -d
 # =============================================================================
 
 services:
   web:
-    # Image name used for Harbor push/pull AND for local `compose build` tags
     image: ${HARBOR_REGISTRY:-harbor.local}/${HARBOR_PROJECT:-zenora}/zenora-web:${IMAGE_TAG:-latest}
     build:
       context: .
-      # Use Dockerfile (full npm build in image) or Dockerfile.runtime (host `dist/`)
       dockerfile: ${DOCKERFILE:-Dockerfile}
       args:
         BUILD_DATE: ${BUILD_DATE:-}
@@ -34,9 +27,9 @@ services:
         VERSION: ${IMAGE_TAG:-latest}
     container_name: zenora-web
     restart: unless-stopped
-    ports:
-      # Local default 8080; on server set WEB_HOST_PORT=80 (edge TLS terminates elsewhere)
-      - "${WEB_HOST_PORT:-8080}:8080"
+    # Reachable by NPM on the shared Docker network (no host port published).
+    expose:
+      - "8080"
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8080/health"]
       interval: 30s
@@ -61,9 +54,8 @@ services:
       - "com.zenora.version=${IMAGE_TAG:-latest}"
       - "com.centurylinklabs.watchtower.enable=true"
     networks:
-      - zenora
+      - proxy
 
-  # Optional: auto-pull newer Harbor images for zenora-web
   watchtower:
     image: containrrr/watchtower:1.7.1
     container_name: zenora-watchtower
@@ -86,9 +78,11 @@ services:
     security_opt:
       - no-new-privileges:true
     networks:
-      - zenora
+      - proxy
 
 networks:
-  zenora:
-    name: zenora-net
-    driver: bridge
+  # Must already exist on the VPS (created by Nginx Proxy Manager / your stack).
+  # Override name with PROXY_NETWORK if yours differs.
+  proxy:
+    name: ${PROXY_NETWORK:-web-proxy}
+    external: true

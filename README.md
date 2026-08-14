@@ -146,14 +146,18 @@ docker build -f Dockerfile.runtime -t zenora-web:local .
 ### Compose local
 
 ```sh
-docker compose up -d --build
+make compose-up
+# ou:
+docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
 ```
 
 Ou avec runtime-only :
 
 ```sh
-DOCKERFILE=Dockerfile.runtime docker compose up -d --build
+make compose-up-runtime
 ```
+
+Production sur le VPS : le conteneur rejoint le réseau Docker de Nginx Proxy Manager (`PROXY_NETWORK`, défaut `web-proxy`) **sans** binder `:80` — NPM route vers `zenora-web:8080`.
 
 ---
 
@@ -229,7 +233,7 @@ Variables runtime serveur : voir `deploy/.env.production.example`
 
 Je recommande aussi de définir des variables d'environnement GitHub côté `production` :
 
-- `WEB_HOST_PORT`
+- `PROXY_NETWORK` (défaut `web-proxy`)
 - `PUBLIC_BASE_HOST`
 
 ---

@@ -34,7 +34,7 @@ compose-build:
 	docker compose build web
 
 compose-up:
-	WEB_HOST_PORT=$(LOCAL_PORT) docker compose up -d --build web
+	WEB_HOST_PORT=$(LOCAL_PORT) docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build web
 
 compose-up-runtime:
-	WEB_HOST_PORT=$(LOCAL_PORT) DOCKERFILE=Dockerfile.runtime docker compose up -d --build web
+	WEB_HOST_PORT=$(LOCAL_PORT) DOCKERFILE=Dockerfile.runtime docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build web
