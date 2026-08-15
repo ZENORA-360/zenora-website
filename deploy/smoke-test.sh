@@ -14,19 +14,33 @@ echo
 
 if [ -n "${IMAGE_DIGEST:-}" ]; then
   echo "== running image digest =="
-  # RepoDigests entries look like registry/project/name@sha256:...
-  matched=0
-  while IFS= read -r line; do
-    case "${line}" in
-      *"@${IMAGE_DIGEST}") matched=1 ;;
-    esac
-  done < <(docker inspect -f '{{range .RepoDigests}}{{println .}}{{end}}' zenora-web 2>/dev/null || true)
-  if [ "${matched}" -ne 1 ]; then
-    echo "Running container is not at expected digest ${IMAGE_DIGEST}"
-    docker inspect -f '{{range .RepoDigests}}{{println .}}{{end}}' zenora-web || true
-    exit 1
-  fi
-  echo "digest OK (${IMAGE_DIGEST})"
+  # Prefer Config.Image (compose sets repo@sha256:… on digest pulls).
+  # RepoDigests can be empty right after recreate depending on engine/version.
+  running_image="$(docker inspect -f '{{.Config.Image}}' zenora-web)"
+  echo "Config.Image=${running_image}"
+  case "${running_image}" in
+    *"@${IMAGE_DIGEST}")
+      echo "digest OK (${IMAGE_DIGEST})"
+      ;;
+    *)
+      # Fallback: image object RepoDigests (when populated)
+      matched=0
+      image_id="$(docker inspect -f '{{.Image}}' zenora-web)"
+      while IFS= read -r line; do
+        [ -z "${line}" ] && continue
+        case "${line}" in
+          *"@${IMAGE_DIGEST}") matched=1 ;;
+        esac
+      done < <(docker image inspect -f '{{range .RepoDigests}}{{println .}}{{end}}' "${image_id}" 2>/dev/null || true)
+      if [ "${matched}" -eq 1 ]; then
+        echo "digest OK via RepoDigests (${IMAGE_DIGEST})"
+      else
+        echo "Running container is not at expected digest ${IMAGE_DIGEST}"
+        docker image inspect -f '{{range .RepoDigests}}{{println .}}{{end}}' "${image_id}" || true
+        exit 1
+      fi
+      ;;
+  esac
 fi
 
 echo "== docker network ${PROXY_NETWORK} -> zenora-web:8080 =="

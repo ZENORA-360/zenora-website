@@ -38,7 +38,7 @@ Base **réutilisable** pour fronts Dockerisés (Harbor + Compose + reverse proxy
 - Gitleaks
 - dependency review (**fail-closed** sur PR — Dependency graph requis)
 - Hadolint
-- SonarQube : si `SONAR_*` présents → `sonar.qualitygate.wait=true` (bloque) ; sinon skip explicite
+- SonarQube : Community Build (pas de `sonar.branch.name` / PR decoration) ; si `SONAR_*` présents → `sonar.qualitygate.wait=true` (bloque) ; sinon skip explicite
 - `CI summary` agrège et échoue si une gate dure échoue
 
 ### `security.yml`
@@ -103,8 +103,8 @@ Le conteneur n’ouvre **pas** `:80` hôte. NPM route vers `zenora-web:8080` sur
 ## Protection GitHub (à appliquer)
 
 ### Environment `production`
-- Required reviewers (au moins 1)
-- Deployment branches : **uniquement `main`** (bloque les `workflow_dispatch` depuis une autre branche)
+- Deployment branches : **uniquement `main`**
+- Required reviewers : **désactivé** (deploy auto après Release sur `main`)
 
 ### Branch protection `main`
 Checks **required** :
@@ -112,7 +112,7 @@ Checks **required** :
 - `Security summary`
 
 Force-push / delete branch : désactivés.  
-`enforce_admins` : false (hotfix admin possible). Reviews PR non forcées (solo-friendly) — le **vrai** gate humain est l’approval environment `production` avant SSH.
+`enforce_admins` : false (hotfix admin possible).
 
 Release n’est pas un check PR (il tourne sur `main` après merge) ; la chaîne reste Release → Deploy.
 ### Dependency graph
@@ -170,7 +170,7 @@ Harbor : `docker login` le temps du pull, puis **`docker logout`** (trap).
 - [ ] Cloudflare exception `/health` (recommandé)
 - [ ] `SONAR_*` configurés (QG fail-closed dès qu’ils existent)
 - [ ] `SLACK_WEBHOOK_URL` (repo secret)
-- [ ] Au prochain Deploy : **Approuver** l’environment `production` dans l’UI Actions
+- [ ] Au prochain Deploy : automatique si Release `main` OK (pas d’approval manuelle)
 
 ## Réutilisation
 

@@ -130,7 +130,9 @@ jobs:
 
       - name: SonarQube scan (fail-closed quality gate)
         if: steps.sonar-ready.outputs.enabled == 'true'
-        uses: SonarSource/sonarqube-scan-action@689fb39b34b9aa95ebc5f8f119343ddd51542402 # v4
+        # Community Build: do NOT pass sonar.branch.name / sonar.pullrequest.*
+        # (those require Developer Edition+).
+        uses: SonarSource/sonarqube-scan-action@fd88b7d7ccbaefd23d8f36f73b59db7a3d246602 # v6.0.0
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
@@ -141,7 +143,6 @@ jobs:
             -Dsonar.exclusions=**/dist/**,**/coverage/**,**/*.test.*,**/*.spec.*
             -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
             -Dsonar.qualitygate.wait=true
-            ${{ github.event_name == 'pull_request' && format('-Dsonar.pullrequest.key={0} -Dsonar.pullrequest.branch={1} -Dsonar.pullrequest.base={2}', github.event.pull_request.number, github.head_ref, github.base_ref) || format('-Dsonar.branch.name={0}', github.ref_name) }}
   ci-summary:
     name: CI summary
     if: always()
