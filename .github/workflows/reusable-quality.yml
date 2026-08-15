@@ -58,6 +58,36 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Quality summary
+        if: always()
+        run: |
+          {
+            echo "## Quality gate"
+            echo ""
+            if [ -f coverage/coverage-summary.json ]; then
+              python3 -c '
+          import json
+          from pathlib import Path
+          total = json.loads(Path("coverage/coverage-summary.json").read_text()).get("total", {})
+          def pct(k):
+              v = total.get(k, {}).get("pct")
+              return f"{v}%" if v is not None else "n/a"
+          print("### Coverage")
+          print("")
+          print(f"| Metric | Value |")
+          print(f"| --- | --- |")
+          print(f"| Statements | **{pct(\"statements\")}** |")
+          print(f"| Branches | **{pct(\"branches\")}** |")
+          print(f"| Functions | **{pct(\"functions\")}** |")
+          print(f"| Lines | **{pct(\"lines\")}** |")
+          '
+            else
+              echo "_No coverage/coverage-summary.json (coverage disabled or empty suite)._"
+            fi
+            echo ""
+            echo "Artifact \`coverage-report\` retained when coverage ran."
+          } >> "$GITHUB_STEP_SUMMARY"
+
       - name: Upload coverage
         if: always() && inputs.run_coverage
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4

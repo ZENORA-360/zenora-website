@@ -73,7 +73,7 @@ case "${pub}" in
     ;;
   403|503)
     echo "WARN: public edge returned ${pub} (often Cloudflare bot/WAF)."
-    echo "Prefer a Cloudflare exception for path /health (see docs/devsecops-pipeline.md)."
+    echo "Prefer a Cloudflare exception for path /health (see .github/README.md)."
     echo "Container + proxy-network checks passed; deploy is considered OK."
     ;;
   *)

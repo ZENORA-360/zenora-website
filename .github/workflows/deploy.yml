@@ -285,15 +285,21 @@ jobs:
              bash '${APP_DIR}/deploy/smoke-test.sh'"
 
       - name: Deployment summary
+        if: always()
         run: |
           {
             echo "## Production deploy"
             echo ""
-            echo "- Tag: \`${{ needs.resolve.outputs.image_tag }}\`"
-            echo "- Digest: \`${{ needs.resolve.outputs.image_digest }}\`"
-            echo "- Cosign verified on digest before SSH"
-            echo "- Pull by digest on host + SSH host key pinned"
-            echo "- Smoke: container + \`${{ vars.PROXY_NETWORK || 'web-proxy' }}\` network"
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Tag | \`${{ needs.resolve.outputs.image_tag }}\` |"
+            echo "| Digest | \`${{ needs.resolve.outputs.image_digest }}\` |"
+            echo "| Proxy network | \`${{ vars.PROXY_NETWORK || 'web-proxy' }}\` |"
+            echo "| Public host | \`${{ vars.PUBLIC_BASE_HOST || 'zenora360.com' }}\` |"
+            echo ""
+            echo "- Cosign verified on digest **before** SSH"
+            echo "- Pull by digest on host · SSH host key pinned · smoke on proxy network"
+            echo "- Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           } >> "$GITHUB_STEP_SUMMARY"
 
   notify:
@@ -302,6 +308,7 @@ jobs:
       - resolve
       - verify-signature
       - deploy
+    # Always when a deploy was attempted: success is rare & useful; failures must wake someone.
     if: always() && needs.resolve.result != 'skipped'
     uses: ./.github/workflows/reusable-notify.yml
     with:

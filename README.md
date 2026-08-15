@@ -1,5 +1,9 @@
 # ZENORA 360 — Site web corporate
 
+[![CI](https://github.com/ZENORA-360/zenora-website/actions/workflows/ci.yml/badge.svg)](https://github.com/ZENORA-360/zenora-website/actions/workflows/ci.yml)
+[![Security](https://github.com/ZENORA-360/zenora-website/actions/workflows/security.yml/badge.svg)](https://github.com/ZENORA-360/zenora-website/actions/workflows/security.yml)
+[![Release Image](https://github.com/ZENORA-360/zenora-website/actions/workflows/release.yml/badge.svg)](https://github.com/ZENORA-360/zenora-website/actions/workflows/release.yml)
+
 Site vitrine officiel de **ZENORA**, studio technologique basé à Yaoundé (Cameroun).  
 **Production** : [https://zenora360.com](https://zenora360.com)
 
@@ -73,22 +77,26 @@ make compose-up
 ```text
 zenora360/
 ├── .github/
+│   ├── README.md              # kit DevSecOps réutilisable
 │   ├── dependabot.yml
 │   ├── workflows/
 │   │   ├── ci.yml
 │   │   ├── security.yml
 │   │   ├── release.yml
-│   │   └── deploy.yml
+│   │   ├── deploy.yml
+│   │   └── reusable-*.yml
+│   ├── scripts/
 │   └── zap-rules.tsv
 ├── deploy/
+│   ├── remote-deploy.sh
+│   ├── smoke-test.sh
 │   └── .env.production.example
-├── docs/
-│   └── devsecops-pipeline.md
 ├── public/
 ├── src/
 ├── Dockerfile
 ├── Dockerfile.runtime
 ├── docker-compose.yml
+├── docker-compose.local.yml
 ├── Makefile
 └── README.md
 ```
@@ -163,76 +171,49 @@ Production sur le VPS : le conteneur rejoint le réseau Docker de Nginx Proxy Ma
 
 ## Pipeline DevSecOps
 
-J'ai refondu puis **durci** la pipeline pour en faire une base réutilisable, fail-closed côté supply chain.
-
-### Workflows
+J’ai refondu toute la chaîne CI/CD du site pour qu’un push sur `main` produise une image scannée, signée, déployée par digest derrière Nginx Proxy Manager — sans bricolage SSH à la main.
 
 | Workflow | Rôle |
 | -------- | ---- |
-| `ci.yml` | qualité, secrets, dependency review, Hadolint |
-| `security.yml` | Trivy gate, CodeQL, ZAP planifié |
-| `release.yml` | build → scan → push → Cosign → SBOM → provenance |
-| `deploy.yml` | verify signature → SSH deploy → smoke / rollback |
-| `reusable-*.yml` | briques réutilisables multi-projets |
+| `ci.yml` | qualité, secrets, deps, Hadolint, Sonar |
+| `security.yml` | Trivy, CodeQL, ZAP (hebdo) |
+| `release.yml` | build → Trivy → Harbor → Cosign → SBOM |
+| `deploy.yml` | verify digest → SSH → pull → health / rollback → smoke |
+| `reusable-*.yml` | briques partagées (qualité, Slack) |
 
-### Principes
+En bref : on ne pousse pas une image avant le scan, on ne déploie pas `latest`, Cosign passe **avant** le SSH, et le conteneur vit sur le réseau `web-proxy` (pas de bind `:80`).
 
-- la CI valide le code avant merge
-- le release **ne pousse jamais** une image avant le scan Trivy
-- le déploiement consomme un tag immuable (`sha-*`) et **refuse `latest`**
-- Cosign est vérifié **avant** le SSH deploy
-- healthcheck + rollback + smoke public
-
-Documentation détaillée : `docs/devsecops-pipeline.md`
+Kit réutilisable (diagrammes, secrets, reprise sur un autre repo) : [`.github/README.md`](.github/README.md).
 
 ---
 
 ## Déploiement production
 
-Le serveur doit disposer au minimum de :
+Prérequis VPS : Docker, Compose, accès Harbor, répertoire `DEPLOY_APP_DIR`.
 
-- Docker
-- Docker Compose
-- accès réseau au registre Harbor
-- un répertoire applicatif cible (`DEPLOY_APP_DIR`)
+Le deploy :
 
-Le workflow `deploy.yml` :
+1. copie `docker-compose.yml` + scripts
+2. écrit `.env` avec `IMAGE_REF=…@sha256:…`
+3. `compose pull` / `up` sur le réseau NPM
+4. healthcheck + rollback si besoin
+5. smoke conteneur + réseau proxy
 
-1. copie `docker-compose.yml`
-2. génère `.env` côté serveur
-3. fait `docker compose pull web`
-4. recrée le service
-5. vérifie `/health`
-6. rollback si nécessaire
-
-Variables runtime serveur : voir `deploy/.env.production.example`
+Exemple runtime : `deploy/.env.production.example`.
 
 ---
 
-## Secrets GitHub à prévoir
+## Secrets GitHub
 
-Détail opérationnel : [`docs/devsecops-pipeline.md`](docs/devsecops-pipeline.md).
+Liste complète : [`.github/README.md`](.github/README.md).
 
-### Harbor
+**Harbor :** `HARBOR_REGISTRY`, `HARBOR_PROJECT`, `HARBOR_USERNAME`, `HARBOR_PASSWORD`
 
-- `HARBOR_REGISTRY` / `HARBOR_PROJECT` / `HARBOR_USERNAME` / `HARBOR_PASSWORD`
+**SSH** (environment `production`) : `DEPLOY_SSH_HOST`, `USER`, `KEY`, `PORT`, `APP_DIR`, **`DEPLOY_SSH_KNOWN_HOSTS`** (`ssh-keyscan -p PORT HOST`)
 
-### Déploiement SSH (environment `production`)
+**Optionnel :** `SONAR_*`, `SLACK_WEBHOOK_URL` (secret repo)
 
-- `DEPLOY_SSH_HOST` / `DEPLOY_SSH_USER` / `DEPLOY_SSH_KEY` / `DEPLOY_SSH_PORT` / `DEPLOY_APP_DIR`
-- `DEPLOY_SSH_KNOWN_HOSTS` — sortie de `ssh-keyscan -p PORT HOST` (obligatoire)
-
-### Qualité / notify
-
-- `SONAR_HOST_URL` + `SONAR_TOKEN` — active le quality gate fail-closed
-- `SLACK_WEBHOOK_URL` — secret **repository**
-
-Variables environment `production` :
-
-- `PROXY_NETWORK` (défaut `web-proxy`)
-- `PUBLIC_BASE_HOST`
-
-Protections recommandées : reviewers sur `production`, deployment branch = `main`, branch protection (`CI summary`, `Security summary`), Dependency graph ON, exception Cloudflare sur `/health`.
+**Vars `production` :** `PROXY_NETWORK` (`web-proxy`), `PUBLIC_BASE_HOST`
 
 ---
 

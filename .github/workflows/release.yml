@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - "**/*.md"
+      - "LICENSE"
+      - ".gitignore"
     tags:
       - "v*"
   workflow_dispatch:
@@ -250,10 +254,16 @@ jobs:
           {
             echo "## Release published"
             echo ""
-            echo "- Repo: \`${REPO}\`"
-            echo "- Tag: \`${IMAGE_TAG}\`"
-            echo "- Digest: \`${DIGEST}\`"
-            echo "- Flow: build → Trivy gate → push → Cosign → SBOM → provenance"
+            echo "| Field | Value |"
+            echo "| --- | --- |"
+            echo "| Image repo | \`${REPO}\` |"
+            echo "| Tag | \`${IMAGE_TAG}\` |"
+            echo "| Digest | \`${DIGEST}\` |"
+            echo "| Git SHA | \`${GITHUB_SHA}\` |"
+            echo ""
+            echo "Flow: build (local) → Trivy image gate → Harbor push → Cosign → SBOM → provenance"
+            echo ""
+            echo "Artifacts: \`release-metadata\` (metadata + SBOM + Trivy SARIF), retention 30d."
           } >> "$GITHUB_STEP_SUMMARY"
 
   notify:
@@ -261,10 +271,13 @@ jobs:
     needs:
       - quality
       - build-scan-sign-publish
-    if: always()
+    # Failures only — success is visible via Release badge / Actions UI.
+    if: >
+      always() &&
+      (needs.quality.result == 'failure' || needs.build-scan-sign-publish.result == 'failure')
     uses: ./.github/workflows/reusable-notify.yml
     with:
-      status: ${{ (needs.quality.result == 'success' && needs.build-scan-sign-publish.result == 'success') && 'success' || 'failure' }}
+      status: failure
       title: "ZENORA image release"
       environment: registry
     secrets:

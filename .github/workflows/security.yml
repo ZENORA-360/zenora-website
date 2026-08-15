@@ -5,10 +5,18 @@ on:
     branches:
       - main
       - develop
+    paths-ignore:
+      - "**/*.md"
+      - "LICENSE"
+      - ".gitignore"
   push:
     branches:
       - main
       - develop
+    paths-ignore:
+      - "**/*.md"
+      - "LICENSE"
+      - ".gitignore"
   schedule:
     - cron: "22 3 * * 1"
   workflow_dispatch:
@@ -254,8 +262,19 @@ jobs:
             echo ""
             echo "| Job | Result |"
             echo "| --- | ------ |"
-            echo "| trivy-fs | ${{ needs.trivy-fs.result }} |"
+            echo "| trivy-fs + config | ${{ needs.trivy-fs.result }} |"
             echo "| codeql | ${{ needs.codeql.result }} |"
+            echo ""
+            if [ "${{ needs.trivy-fs.result }}" = "success" ] && [ "${{ needs.codeql.result }}" = "success" ]; then
+              echo "**Trivy** filesystem/config: no blocking HIGH/CRITICAL (unfixed ignored per policy)."
+              echo ""
+              echo "**CodeQL** \`security-extended\`: clean for this run."
+            else
+              echo "Open the failed job logs + SARIF on the Security tab for findings."
+            fi
+            echo ""
+            echo "- Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo "- Artefacts: Trivy SARIF (Security alerts), npm-audit-report, ZAP (schedule/manual)."
           } >> "$GITHUB_STEP_SUMMARY"
 
           if [ "${{ needs.trivy-fs.result }}" != "success" ] || [ "${{ needs.codeql.result }}" != "success" ]; then

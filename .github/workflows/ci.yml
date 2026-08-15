@@ -8,10 +8,18 @@ on:
       - "feature/**"
       - "hotfix/**"
       - "release/**"
+    paths-ignore:
+      - "**/*.md"
+      - "LICENSE"
+      - ".gitignore"
   pull_request:
     branches:
       - main
       - develop
+    paths-ignore:
+      - "**/*.md"
+      - "LICENSE"
+      - ".gitignore"
 
 permissions:
   contents: read
@@ -167,6 +175,10 @@ jobs:
             echo "| dependency-review | ${{ needs.dependency-review.result }} |"
             echo "| dockerfile-lint | ${{ needs.dockerfile-lint.result }} |"
             echo "| sonar | ${{ needs.sonar.result }} |"
+            echo ""
+            echo "- Ref: \`${{ github.ref_name }}\` · SHA: \`$(echo '${{ github.sha }}' | cut -c1-7)\` · Actor: @${{ github.actor }}"
+            echo "- Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            echo "- Coverage details: see **Quality / Quality gate** job summary when coverage ran."
           } >> "$GITHUB_STEP_SUMMARY"
 
           failed=0

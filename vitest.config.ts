@@ -10,6 +10,10 @@ export default defineConfig({
     passWithNoTests: true,
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    coverage: {
+      reporter: ["text", "lcov", "json-summary"],
+      reportsDirectory: "coverage",
+    },
   },
   resolve: {
     alias: { "@": path.resolve(__dirname, "./src") },
